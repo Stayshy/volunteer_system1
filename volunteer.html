@@ -4,13 +4,146 @@
     <meta charset="UTF-8">
     <title>Профиль волонтера</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
 </head>
 <body>
 <div class="container mt-5">
     <h1>Профиль волонтера</h1>
-    <p>Добро пожаловать! Здесь будет ваш профиль, календарь и волонтерская книжка.</p>
-    <a href="/volunteer_system/index.html" class="btn btn-secondary">Выйти</a>
+    <div id="profile-error" class="alert alert-danger d-none"></div>
+    <div id="profile-success" class="alert alert-success d-none"></div>
+    <div id="profile-info">
+        <h3>Добро пожаловать, <span id="user-name"></span>!</h3>
+        <p><strong>Email:</strong> <span id="user-email"></span></p>
+        <p><strong>Телефон:</strong> <span id="user-phone"></span></p>
+        <p><strong>Аватар:</strong> <img id="user-avatar" src="" alt="Аватар" style="max-width: 100px;"></p>
+    </div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">Редактировать профиль</button>
+    <a href="index.html" class="btn btn-secondary" onclick="localStorage.removeItem('user');">Выйти</a>
+
+    <!-- Модальное окно для редактирования -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editProfileModalLabel">Редактировать профиль</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-profile-form">
+                        <div class="mb-3">
+                            <label for="edit-name" class="form-label">Имя</label>
+                            <input type="text" class="form-control" id="edit-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="edit-email">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-phone" class="form-label">Телефон</label>
+                            <input type="text" class="form-control" id="edit-phone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-avatar" class="form-label">URL аватара</label>
+                            <input type="text" class="form-control" id="edit-avatar">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const user = JSON.parse(localStorage.getItem('user'));
+        const profileError = document.getElementById('profile-error');
+        const profileSuccess = document.getElementById('profile-success');
+
+        if (!user || user.role !== 'volunteer') {
+            profileError.textContent = 'Пожалуйста, войдите как волонтёр';
+            profileError.classList.remove('d-none');
+            setTimeout(() => window.location.href = '/volunteer_system/index.html', 2000);
+            return;
+        }
+
+        // Отображаем данные пользователя
+        document.getElementById('user-name').textContent = user.name;
+        document.getElementById('user-email').textContent = user.email || 'Не указан';
+        document.getElementById('user-phone').textContent = user.phone || 'Не указан';
+        document.getElementById('user-avatar').src = user.avatar || 'assets/images/default.jpg';
+
+        // Заполняем форму редактирования
+        document.getElementById('edit-name').value = user.name;
+        document.getElementById('edit-email').value = user.email || '';
+        document.getElementById('edit-phone').value = user.phone || '';
+        document.getElementById('edit-avatar').value = user.avatar || '';
+
+        // Обработка редактирования профиля
+        document.getElementById('edit-profile-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const data = {
+                id: user.id,
+                name: document.getElementById('edit-name').value.trim(),
+                email: document.getElementById('edit-email').value.trim() || null,
+                phone: document.getElementById('edit-phone').value.trim() || null,
+                avatar: document.getElementById('edit-avatar').value.trim() || null,
+                role: user.role
+            };
+
+            console.log('Редактирование профиля:', JSON.stringify(data));
+
+            fetch('/volunteer_system/api/profile.php', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(data),
+                credentials: 'same-origin'
+            })
+                .then(response => response.text().then(text => ({ ok: response.ok, status: response.status, text })))
+                .then(({ ok, status, text }) => {
+                    console.log('Тело ответа (профиль):', text);
+                    let data;
+                    try {
+                        data = JSON.parse(text);
+                    } catch (e) {
+                        throw new Error(`Ошибка парсинга JSON: ${e.message}, Текст: ${text}`);
+                    }
+                    if (!ok) {
+                        throw new Error(`HTTP ${status}: ${data.error || 'Неизвестная ошибка'}`);
+                    }
+                    if (data.error) {
+                        profileError.textContent = data.error;
+                        profileError.classList.remove('d-none');
+                    } else {
+                        profileSuccess.textContent = 'Профиль обновлён!';
+                        profileSuccess.classList.remove('d-none');
+                        // Обновляем localStorage только при успехе
+                        localStorage.setItem('user', JSON.stringify({
+                            id: user.id,
+                            name: data.name,
+                            email: data.email,
+                            phone: data.phone,
+                            avatar: data.avatar,
+                            role: user.role
+                        }));
+                        // Обновляем отображение
+                        document.getElementById('user-name').textContent = data.name;
+                        document.getElementById('user-email').textContent = data.email || 'Не указан';
+                        document.getElementById('user-phone').textContent = data.phone || 'Не указан';
+                        document.getElementById('user-avatar').src = data.avatar || 'assets/images/default.jpg';
+                        setTimeout(() => profileSuccess.classList.add('d-none'), 3000);
+                    }
+                })
+                .catch(error => {
+                    profileError.textContent = 'Ошибка при обновлении профиля: ' + error.message;
+                    profileError.classList.remove('d-none');
+                    console.error('Ошибка:', error);
+                });
+        });
+    });
+</script>
 </body>
 </html>

@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const phoneGroup = document.getElementById('register-phone-group');
     const organizationGroup = document.getElementById('register-organization-group');
 
-    // Очистка уведомлений
     function clearNotifications() {
         loginError.classList.add('d-none');
         loginSuccess.classList.add('d-none');
@@ -17,7 +16,6 @@ document.addEventListener('DOMContentLoaded', function() {
         registerSuccess.classList.add('d-none');
     }
 
-    // Переключение полей в зависимости от роли
     roleSelect.addEventListener('change', function() {
         if (this.value === 'volunteer') {
             phoneGroup.classList.remove('d-none');
@@ -28,7 +26,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Регистрация
     registerBtn.addEventListener('click', function(e) {
         e.preventDefault();
         clearNotifications();
@@ -40,7 +37,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const phone = document.getElementById('register-phone').value.trim();
         const organization = document.getElementById('register-organization').value.trim();
 
-        // Валидация на клиенте
         if (!name || !email || !password) {
             registerError.textContent = 'Заполните все обязательные поля';
             registerError.classList.remove('d-none');
@@ -51,25 +47,43 @@ document.addEventListener('DOMContentLoaded', function() {
         if (role === 'volunteer' && phone) data.phone = phone;
         if (role === 'organizer' && organization) data.organization = organization;
 
-        fetch('/volunteer_system/api/register', {
+        console.log('Регистрация:', JSON.stringify(data));
+
+        fetch('/volunteer_system/api/register.php', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(data),
+            credentials: 'same-origin'
         })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ошибка: ${response.status}`);
-                }
-                return response.json();
+                console.log('Ответ (регистрация):', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: response.url,
+                    headers: [...response.headers.entries()]
+                });
+                return response.text().then(text => ({ ok: response.ok, status: response.status, text }));
             })
-            .then(data => {
+            .then(({ ok, status, text }) => {
+                console.log('Тело ответа (регистрация):', text);
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    throw new Error(`Ошибка парсинга JSON: ${e.message}, Текст: ${text}`);
+                }
+                if (!ok) {
+                    throw new Error(`HTTP ${status}: ${data.error || 'Неизвестная ошибка'}`);
+                }
                 if (data.error) {
                     registerError.textContent = data.error;
                     registerError.classList.remove('d-none');
                 } else {
                     registerSuccess.textContent = 'Регистрация успешна! Теперь вы можете войти.';
                     registerSuccess.classList.remove('d-none');
-                    // Очистка формы
                     document.getElementById('register-name').value = '';
                     document.getElementById('register-email').value = '';
                     document.getElementById('register-password').value = '';
@@ -84,7 +98,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
 
-    // Вход
     loginBtn.addEventListener('click', function(e) {
         e.preventDefault();
         clearNotifications();
@@ -98,25 +111,53 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        fetch('/volunteer_system/api/login', {
+        const data = { email, password };
+        console.log('Вход:', JSON.stringify(data));
+
+        fetch('/volunteer_system/api/login.php', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(data),
+            credentials: 'same-origin'
         })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ошибка: ${response.status}`);
-                }
-                return response.json();
+                console.log('Ответ (вход):', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: response.url,
+                    headers: [...response.headers.entries()],
+                    requestData: JSON.stringify(data)
+                });
+                return response.text().then(text => ({ ok: response.ok, status: response.status, text }));
             })
-            .then(data => {
+            .then(({ ok, status, text }) => {
+                console.log('Тело ответа (вход):', text);
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    throw new Error(`Ошибка парсинга JSON: ${e.message}, Текст: ${text}`);
+                }
+                if (!ok) {
+                    throw new Error(`HTTP ${status}: ${data.error || 'Неизвестная ошибка'}`);
+                }
                 if (data.error) {
                     loginError.textContent = data.error;
                     loginError.classList.remove('d-none');
                 } else {
+                    localStorage.setItem('user', JSON.stringify({
+                        id: data.id,
+                        name: data.name,
+                        email: data.email,
+                        phone: data.phone,
+                        avatar: data.avatar,
+                        role: data.role
+                    }));
                     loginSuccess.textContent = `Добро пожаловать, ${data.name}!`;
                     loginSuccess.classList.remove('d-none');
-                    // Перенаправление
                     setTimeout(() => {
                         if (data.role === 'volunteer') {
                             window.location.href = '/volunteer_system/volunteer.html';

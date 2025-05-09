@@ -3,8 +3,16 @@ body {
     background-color: #f8f9fa;
 }
 .container {
-    max-width: 800px;
+    max-width: 900px;
 }
 .alert {
     margin-bottom: 1rem;
+}
+.card {
+    margin-bottom: 1rem;
+    border-radius: 8px;
+}
+.volunteer-book .card {
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
