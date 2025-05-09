@@ -30,9 +30,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     $stmt = $conn->prepare('
-        SELECT e.id, e.title, e.description, e.event_date, r.hours
+        SELECT e.id, e.title, e.description, e.event_date, COALESCE(r.hours, e.hours) as hours,
+               rep.rating, rep.comment
         FROM registrations r
         JOIN events e ON r.event_id = e.id
+        LEFT JOIN reports rep ON r.event_id = rep.event_id AND r.volunteer_id = rep.volunteer_id
         WHERE r.volunteer_id = ?
     ');
     $stmt->bind_param('i', $volunteer_id);
@@ -41,7 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $registrations = $result->fetch_all(MYSQLI_ASSOC);
 
     if ($calendar) {
-        // Формат для FullCalendar
         $events = array_map(function($reg) {
             return [
                 'id' => $reg['id'],
@@ -71,7 +72,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
-    // Проверка лимита участников
     $stmt = $conn->prepare('SELECT COUNT(*) as count, max_participants FROM registrations r JOIN events e ON r.event_id = e.id WHERE r.event_id = ?');
     $stmt->bind_param('i', $event_id);
     $stmt->execute();
