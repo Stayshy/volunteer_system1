@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Accept');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -11,8 +11,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 $conn = new mysqli('localhost', 'root', '', 'volunteer_system');
 if ($conn->connect_error) {
+    file_put_contents('../debug.log', "Ошибка подключения к базе данных: " . $conn->connect_error . "\n", FILE_APPEND);
     http_response_code(500);
-    echo json_encode(['error' => 'Ошибка подключения к базе данных: ' . $conn->connect_error]);
+    echo json_encode(['error' => 'Ошибка подключения к базе данных']);
     exit;
 }
 
@@ -21,41 +22,70 @@ file_put_contents('../debug.log', "Registrations request: $raw_input\n", FILE_AP
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $volunteer_id = $_GET['volunteer_id'] ?? '';
-    $calendar = $_GET['calendar'] ?? 0;
+    $calendar = isset($_GET['calendar']) && $_GET['calendar'] === '1';
+
+    file_put_contents('../debug.log', "GET params: volunteer_id=$volunteer_id, calendar=$calendar\n", FILE_APPEND);
 
     if (empty($volunteer_id)) {
+        file_put_contents('../debug.log', "Ошибка: Укажите ID волонтёра\n", FILE_APPEND);
         http_response_code(400);
         echo json_encode(['error' => 'Укажите ID волонтёра']);
         exit;
     }
 
-    $stmt = $conn->prepare('
-             SELECT e.id, e.title, e.description, e.event_date, COALESCE(r.hours, e.hours) as hours
-             FROM registrations r
-             JOIN events e ON r.event_id = e.id
-             WHERE r.volunteer_id = ?
-         ');
-    $stmt->bind_param('i', $volunteer_id);
-    $stmt->execute();
+    if ($calendar) {
+        // Формат для FullCalendar
+        $stmt = $conn->prepare('
+            SELECT e.id, e.title, e.event_date as start
+            FROM registrations r
+            JOIN events e ON r.event_id = e.id
+            WHERE r.volunteer_id = ?
+        ');
+        if (!$stmt) {
+            file_put_contents('../debug.log', "Ошибка подготовки запроса (calendar): " . $conn->error . "\n", FILE_APPEND);
+            http_response_code(500);
+            echo json_encode(['error' => 'Ошибка подготовки запроса']);
+            exit;
+        }
+        $stmt->bind_param('i', $volunteer_id);
+    } else {
+        // Полный список регистраций
+        $stmt = $conn->prepare('
+            SELECT r.event_id, r.hours, r.registered_at,
+                   e.title, e.description, e.event_date, e.status, e.hours as event_hours, e.organizer_id,
+                   o.name as organizer_name,
+                   rp.rating, rp.comments as comment
+            FROM registrations r
+            JOIN events e ON r.event_id = e.id
+            JOIN organizers o ON e.organizer_id = o.id
+            LEFT JOIN reports rp ON r.volunteer_id = rp.volunteer_id AND r.event_id = rp.event_id
+            WHERE r.volunteer_id = ?
+        ');
+        if (!$stmt) {
+            file_put_contents('../debug.log', "Ошибка подготовки запроса (registrations): " . $conn->error . "\n", FILE_APPEND);
+            http_response_code(500);
+            echo json_encode(['error' => 'Ошибка подготовки запроса']);
+            exit;
+        }
+        $stmt->bind_param('i', $volunteer_id);
+    }
+
+    if (!$stmt->execute()) {
+        file_put_contents('../debug.log', "Ошибка выполнения запроса: " . $stmt->error . "\n", FILE_APPEND);
+        http_response_code(500);
+        echo json_encode(['error' => 'Ошибка выполнения запроса']);
+        exit;
+    }
+
     $result = $stmt->get_result();
     $registrations = $result->fetch_all(MYSQLI_ASSOC);
 
-    if ($calendar) {
-        $events = array_map(function($reg) {
-            return [
-                'id' => $reg['id'],
-                'title' => $reg['title'],
-                'start' => $reg['event_date'],
-                'description' => $reg['description']
-            ];
-        }, $registrations);
-        echo json_encode($events);
-    } else {
-        echo json_encode($registrations);
-    }
+    http_response_code(200);
+    echo json_encode($registrations);
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode($raw_input, true);
     if (!$data) {
+        file_put_contents('../debug.log', "Ошибка: Неверный формат данных для POST\n", FILE_APPEND);
         http_response_code(400);
         echo json_encode(['error' => 'Неверный формат данных']);
         exit;
@@ -65,29 +95,88 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $event_id = $data['event_id'] ?? '';
 
     if (empty($volunteer_id) || empty($event_id)) {
+        file_put_contents('../debug.log', "Ошибка: Укажите ID волонтёра и мероприятия\n", FILE_APPEND);
         http_response_code(400);
         echo json_encode(['error' => 'Укажите ID волонтёра и мероприятия']);
         exit;
     }
 
-    $stmt = $conn->prepare('SELECT COUNT(*) as count, max_participants FROM registrations r JOIN events e ON r.event_id = e.id WHERE r.event_id = ?');
-    $stmt->bind_param('i', $event_id);
+    // Проверка, что мероприятие активно
+    $stmt = $conn->prepare('SELECT status, max_participants, (SELECT COUNT(*) FROM registrations WHERE event_id = ?) as current_participants FROM events WHERE id = ?');
+    if (!$stmt) {
+        file_put_contents('../debug.log', "Ошибка подготовки запроса (event check): " . $conn->error . "\n", FILE_APPEND);
+        http_response_code(500);
+        echo json_encode(['error' => 'Ошибка подготовки запроса']);
+        exit;
+    }
+    $stmt->bind_param('ii', $event_id, $event_id);
     $stmt->execute();
-    $result = $stmt->get_result()->fetch_assoc();
-    if ($result['count'] >= $result['max_participants']) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Мероприятие заполнено']);
+    $event = $stmt->get_result()->fetch_assoc();
+
+    if (!$event) {
+        file_put_contents('../debug.log', "Мероприятие с ID $event_id не найдено\n", FILE_APPEND);
+        http_response_code(404);
+        echo json_encode(['error' => 'Мероприятие не найдено']);
         exit;
     }
 
-    $stmt = $conn->prepare('INSERT INTO registrations (volunteer_id, event_id) VALUES (?, ?)');
+    if ($event['status'] !== 'active') {
+        file_put_contents('../debug.log', "Мероприятие с ID $event_id не активно\n", FILE_APPEND);
+        http_response_code(400);
+        echo json_encode(['error' => 'Мероприятие не активно']);
+        exit;
+    }
+
+    if ($event['current_participants'] >= $event['max_participants']) {
+        file_put_contents('../debug.log', "Мероприятие с ID $event_id достигло максимума участников\n", FILE_APPEND);
+        http_response_code(400);
+        echo json_encode(['error' => 'Мероприятие достигло максимума участников']);
+        exit;
+    }
+
+    // Проверка, что волонтёр ещё не зарегистрирован
+    $stmt = $conn->prepare('SELECT id FROM registrations WHERE volunteer_id = ? AND event_id = ?');
+    if (!$stmt) {
+        file_put_contents('../debug.log', "Ошибка подготовки запроса (registration check): " . $conn->error . "\n", FILE_APPEND);
+        http_response_code(500);
+        echo json_encode(['error' => 'Ошибка подготовки запроса']);
+        exit;
+    }
     $stmt->bind_param('ii', $volunteer_id, $event_id);
     $stmt->execute();
-    http_response_code(201);
-    echo json_encode(['success' => true]);
-} else {
-    http_response_code(405);
-    echo json_encode(['error' => 'Метод не разрешен']);
+    $existing = $stmt->get_result()->fetch_assoc();
+
+    if ($existing) {
+        file_put_contents('../debug.log', "Волонтёр $volunteer_id уже зарегистрирован на мероприятие $event_id\n", FILE_APPEND);
+        http_response_code(400);
+        echo json_encode(['error' => 'Вы уже зарегистрированы на это мероприятие']);
+        exit;
+    }
+
+    // Регистрация
+    $stmt = $conn->prepare('INSERT INTO registrations (volunteer_id, event_id) VALUES (?, ?)');
+    if (!$stmt) {
+        file_put_contents('../debug.log', "Ошибка подготовки запроса (insert registration): " . $conn->error . "\n", FILE_APPEND);
+        http_response_code(500);
+        echo json_encode(['error' => 'Ошибка подготовки запроса']);
+        exit;
+    }
+    $stmt->bind_param('ii', $volunteer_id, $event_id);
+
+    if (!$stmt->execute()) {
+        file_put_contents('../debug.log', "Ошибка выполнения запроса (insert registration): " . $stmt->error . "\n", FILE_APPEND);
+        http_response_code(500);
+        echo json_encode(['error' => 'Ошибка выполнения запроса']);
+        exit;
+    }
+
+    if ($stmt->affected_rows > 0) {
+        http_response_code(201);
+        echo json_encode(['success' => true, 'id' => $conn->insert_id]);
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => 'Ошибка при регистрации']);
+    }
 }
 
 $conn->close();
