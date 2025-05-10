@@ -162,7 +162,10 @@
         }
 
         // Загрузка информации об организаторе
-        fetch(`/volunteer_system/api/organizer.php?id=${organizerId}${user ? '&user_id=' + user.id + '&user_role=' + user.role : ''}`)
+        const organizerUrl = `/volunteer_system/api/organizer.php?id=${organizerId}${user ? '&user_id=' + user.id + '&user_role=' + user.role : ''}`;
+        console.log('Запрос профиля организатора:', organizerUrl);
+
+        fetch(organizerUrl)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
@@ -320,7 +323,6 @@
                 profileError.textContent = 'Ошибка загрузки профиля: ' + error.message;
                 profileError.classList.remove('d-none');
                 console.error('Ошибка:', error);
-                // Очищаем поля, чтобы не оставались в состоянии "Загрузка..."
                 document.getElementById('organizer-name').textContent = 'Ошибка';
                 document.getElementById('organizer-email').textContent = 'Ошибка';
                 document.getElementById('organizer-phone').textContent = 'Ошибка';

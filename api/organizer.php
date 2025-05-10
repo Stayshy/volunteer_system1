@@ -25,6 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $user_id = $_GET['user_id'] ?? '';
     $user_role = $_GET['user_role'] ?? '';
 
+    file_put_contents('../debug.log', "GET params: organizer_id=$organizer_id, user_id=$user_id, user_role=$user_role\n", FILE_APPEND);
+
     if (empty($organizer_id)) {
         file_put_contents('../debug.log', "Ошибка: Укажите ID организатора\n", FILE_APPEND);
         http_response_code(400);
@@ -34,17 +36,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $stmt = $conn->prepare('SELECT id, name, email, phone, organization, avatar FROM organizers WHERE id = ?');
     if (!$stmt) {
-        file_put_contents('../debug.log', "Ошибка подготовки запроса в organizer.php: " . $conn->error . "\n", FILE_APPEND);
+        file_put_contents('../debug.log', "Ошибка подготовки запроса (SELECT organizers): " . $conn->error . "\n", FILE_APPEND);
         http_response_code(500);
-        echo json_encode(['error' => 'Ошибка подготовки запроса: ' . $conn->error]);
+        echo json_encode(['error' => 'Ошибка подготовки запроса (SELECT organizers): ' . $conn->error]);
         exit;
     }
 
     $stmt->bind_param('i', $organizer_id);
     if (!$stmt->execute()) {
-        file_put_contents('../debug.log', "Ошибка выполнения запроса в organizer.php: " . $stmt->error . "\n", FILE_APPEND);
+        file_put_contents('../debug.log', "Ошибка выполнения запроса (SELECT organizers): " . $stmt->error . "\n", FILE_APPEND);
         http_response_code(500);
-        echo json_encode(['error' => 'Ошибка выполнения запроса: ' . $stmt->error]);
+        echo json_encode(['error' => 'Ошибка выполнения запроса (SELECT organizers): ' . $stmt->error]);
         exit;
     }
 
@@ -52,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $organizer = $result->fetch_assoc();
 
     if (!$organizer) {
+        file_put_contents('../debug.log', "Организатор с ID $organizer_id не найден\n", FILE_APPEND);
         http_response_code(404);
         echo json_encode(['error' => 'Организатор не найден']);
         exit;
@@ -59,41 +62,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $stmt = $conn->prepare('SELECT COUNT(*) as subscribers FROM subscriptions WHERE organizer_id = ?');
     if (!$stmt) {
-        file_put_contents('../debug.log', "Ошибка подготовки запроса (subscribers) в organizer.php: " . $conn->error . "\n", FILE_APPEND);
+        file_put_contents('../debug.log', "Ошибка подготовки запроса (subscribers): " . $conn->error . "\n", FILE_APPEND);
         http_response_code(500);
-        echo json_encode(['error' => 'Ошибка подготовки запроса: ' . $conn->error]);
+        echo json_encode(['error' => 'Ошибка подготовки запроса (subscribers): ' . $conn->error]);
         exit;
     }
 
     $stmt->bind_param('i', $organizer_id);
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        file_put_contents('../debug.log', "Ошибка выполнения запроса (subscribers): " . $stmt->error . "\n", FILE_APPEND);
+        http_response_code(500);
+        echo json_encode(['error' => 'Ошибка выполнения запроса (subscribers): ' . $stmt->error]);
+        exit;
+    }
+
     $result = $stmt->get_result()->fetch_assoc();
     $organizer['subscribers'] = $result['subscribers'];
 
     $stmt = $conn->prepare('SELECT COUNT(*) as event_count FROM events WHERE organizer_id = ?');
     if (!$stmt) {
-        file_put_contents('../debug.log', "Ошибка подготовки запроса (event_count) в organizer.php: " . $conn->error . "\n", FILE_APPEND);
+        file_put_contents('../debug.log', "Ошибка подготовки запроса (event_count): " . $conn->error . "\n", FILE_APPEND);
         http_response_code(500);
-        echo json_encode(['error' => 'Ошибка подготовки запроса: ' . $conn->error]);
+        echo json_encode(['error' => 'Ошибка подготовки запроса (event_count): ' . $conn->error]);
         exit;
     }
 
     $stmt->bind_param('i', $organizer_id);
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        file_put_contents('../debug.log', "Ошибка выполнения запроса (event_count): " . $stmt->error . "\n", FILE_APPEND);
+        http_response_code(500);
+        echo json_encode(['error' => 'Ошибка выполнения запроса (event_count): ' . $stmt->error]);
+        exit;
+    }
+
     $result = $stmt->get_result()->fetch_assoc();
     $organizer['event_count'] = $result['event_count'];
 
     if ($user_id && $user_role) {
-        $stmt = $conn->prepare('SELECT COUNT(*) as subscribed FROM subscriptions WHERE user_id = ? AND user_role = ? AND organizer_id = ?');
+        $stmt = $conn->prepare('SELECT COUNT(*) as subscribed FROM subscriptions WHERE volunteer_id = ? AND organizer_id = ?');
         if (!$stmt) {
-            file_put_contents('../debug.log', "Ошибка подготовки запроса (subscribed) в organizer.php: " . $conn->error . "\n", FILE_APPEND);
+            file_put_contents('../debug.log', "Ошибка подготовки запроса (subscribed): " . $conn->error . "\n", FILE_APPEND);
             http_response_code(500);
-            echo json_encode(['error' => 'Ошибка подготовки запроса: ' . $conn->error]);
+            echo json_encode(['error' => 'Ошибка подготовки запроса (subscribed): ' . $conn->error]);
             exit;
         }
 
-        $stmt->bind_param('isi', $user_id, $user_role, $organizer_id);
-        $stmt->execute();
+        $stmt->bind_param('ii', $user_id, $organizer_id);
+        if (!$stmt->execute()) {
+            file_put_contents('../debug.log', "Ошибка выполнения запроса (subscribed): " . $stmt->error . "\n", FILE_APPEND);
+            http_response_code(500);
+            echo json_encode(['error' => 'Ошибка выполнения запроса (subscribed): ' . $stmt->error]);
+            exit;
+        }
+
         $result = $stmt->get_result()->fetch_assoc();
         $organizer['subscribed'] = $result['subscribed'] > 0;
     }
@@ -117,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $avatar = $data['avatar'] ?? null;
 
     if (empty($id) || empty($name) || empty($email)) {
-        file_put_contents('../debug.log', "Ошибка: Пустые обязательные поля для PUT в organizer.php - id: $id, name: $name, email: $email\n", FILE_APPEND);
+        file_put_contents('../debug.log', "Ошибка: Пустые обязательные поля для PUT - id: $id, name: $name, email: $email\n", FILE_APPEND);
         http_response_code(400);
         echo json_encode(['error' => 'Заполните обязательные поля: ID, имя, email']);
         exit;
@@ -125,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $stmt = $conn->prepare('UPDATE organizers SET name = ?, email = ?, phone = ?, organization = ?, avatar = ? WHERE id = ?');
     if (!$stmt) {
-        file_put_contents('../debug.log', "Ошибка подготовки PUT-запроса в organizer.php: " . $conn->error . "\n", FILE_APPEND);
+        file_put_contents('../debug.log', "Ошибка подготовки PUT-запроса: " . $conn->error . "\n", FILE_APPEND);
         http_response_code(500);
         echo json_encode(['error' => 'Ошибка подготовки запроса: ' . $conn->error]);
         exit;
@@ -133,7 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $stmt->bind_param('sssssi', $name, $email, $phone, $organization, $avatar, $id);
     if (!$stmt->execute()) {
-        file_put_contents('../debug.log', "Ошибка выполнения PUT-запроса в organizer.php: " . $stmt->error . "\n", FILE_APPEND);
+        file_put_contents('../debug.log', "Ошибка выполнения PUT-запроса: " . $stmt->error . "\n", FILE_APPEND);
         http_response_code(500);
         echo json_encode(['error' => 'Ошибка выполнения запроса: ' . $stmt->error]);
         exit;

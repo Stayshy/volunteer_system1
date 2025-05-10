@@ -45,13 +45,13 @@
     <div id="profile-error" class="alert alert-danger d-none"></div>
     <div id="profile-success" class="alert alert-success d-none"></div>
 
-    <h3>Добро пожаловать, <span id="user-name"></span>!</h3>
+    <h3>Добро пожаловать, <span id="user-name">Загрузка...</span>!</h3>
 
     <!-- Уведомления -->
     <div class="card mb-4">
         <div class="card-body">
             <h4>Уведомления</h4>
-            <div id="notifications-list"></div>
+            <div id="notifications-list">Загрузка...</div>
         </div>
     </div>
 
@@ -129,7 +129,7 @@
     <div class="card mb-4">
         <div class="card-body">
             <h4>Ваши мероприятия</h4>
-            <div id="events-list"></div>
+            <div id="events-list">Загрузка...</div>
         </div>
     </div>
 
@@ -137,7 +137,7 @@
     <div class="card">
         <div class="card-body">
             <h4>Новости</h4>
-            <div id="news-feed"></div>
+            <div id="news-feed">Загрузка...</div>
         </div>
     </div>
 
@@ -209,7 +209,12 @@
         // Загрузка мероприятий для выпадающего списка
         function loadEventsForNews() {
             fetch(`/volunteer_system/api/events.php?organizer_id=${user.id}&status=active`)
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
+                    }
+                    return response.text();
+                })
                 .then(text => {
                     console.log('Ответ от api/events.php (for news):', text);
                     let events;
@@ -228,14 +233,20 @@
                     });
                 })
                 .catch(error => {
-                    console.error('Ошибка:', error);
+                    console.error('Ошибка загрузки мероприятий для новостей:', error);
+                    document.getElementById('news-event').innerHTML = '<option value="">Ошибка загрузки</option>';
                 });
         }
 
         // Загрузка мероприятий
         function loadEvents(status = '') {
             fetch(`/volunteer_system/api/events.php?organizer_id=${user.id}${status ? '&status=' + status : ''}`)
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
+                    }
+                    return response.text();
+                })
                 .then(text => {
                     console.log('Ответ от api/events.php:', text);
                     let events;
@@ -249,40 +260,47 @@
                         eventsList.innerHTML = '<p>У вас пока нет мероприятий.</p>';
                         return;
                     }
+                    eventsList.innerHTML = '';
                     events.forEach(event => {
                         const eventDate = new Date(event.event_date);
                         const isPast = eventDate < new Date();
                         eventsList.innerHTML += `
-                                 <div class="event-card card">
-                                     <div class="card-body">
-                                         <h5 class="card-title">${event.title}</h5>
-                                         <p class="card-text">
-                                             <strong>Дата:</strong> ${eventDate.toLocaleString('ru-RU')}<br>
-                                             <strong>Максимум участников:</strong> ${event.max_participants}<br>
-                                             <strong>Часы:</strong> ${event.hours || 'Не указано'}<br>
-                                             <strong>Статус:</strong> ${event.status === 'active' ? 'Активное' : event.status === 'completed' ? 'Завершённое' : 'Повторяющееся'}<br>
-                                             <strong>Описание:</strong> ${event.description || 'Нет описания'}
-                                         </p>
-                                         <button class="btn btn-warning" onclick="openEditModal(${event.id}, '${event.title}', '${event.description || ''}', '${eventDate.toISOString().slice(0, 16)}', ${event.max_participants}, '${event.status}', ${event.hours || 0})">Редактировать</button>
-                                         <button class="btn btn-danger" onclick="endEvent(${event.id}, '${event.status}')" ${isPast || event.status === 'completed' ? 'disabled' : ''}>Завершить</button>
-                                         <button class="btn btn-success" onclick="renewEvent(${event.id})">Возобновить</button>
-                                         <button class="btn btn-info" onclick="sendNotifications(${event.id})">Отправить уведомления</button>
-                                     </div>
-                                 </div>
-                             `;
+                            <div class="event-card card">
+                                <div class="card-body">
+                                    <h5 class="card-title">${event.title || 'Без названия'}</h5>
+                                    <p class="card-text">
+                                        <strong>Дата:</strong> ${eventDate.toLocaleString('ru-RU')}<br>
+                                        <strong>Максимум участников:</strong> ${event.max_participants || 'Не указано'}<br>
+                                        <strong>Часы:</strong> ${event.hours || 'Не указано'}<br>
+                                        <strong>Статус:</strong> ${event.status === 'active' ? 'Активное' : event.status === 'completed' ? 'Завершённое' : event.status === 'recurring' ? 'Повторяющееся' : 'Неизвестный статус'}<br>
+                                        <strong>Описание:</strong> ${event.description || 'Нет описания'}
+                                    </p>
+                                    <button class="btn btn-warning" onclick="openEditModal(${event.id}, '${event.title}', '${event.description || ''}', '${eventDate.toISOString().slice(0, 16)}', ${event.max_participants}, '${event.status}', ${event.hours || 0})">Редактировать</button>
+                                    <button class="btn btn-danger" onclick="endEvent(${event.id}, '${event.status}')" ${isPast || event.status === 'completed' ? 'disabled' : ''}>Завершить</button>
+                                    <button class="btn btn-success" onclick="renewEvent(${event.id})">Возобновить</button>
+                                    <button class="btn btn-info" onclick="sendNotifications(${event.id})">Отправить уведомления</button>
+                                </div>
+                            </div>
+                        `;
                     });
                 })
                 .catch(error => {
                     profileError.textContent = 'Ошибка загрузки мероприятий: ' + error.message;
                     profileError.classList.remove('d-none');
                     console.error('Ошибка:', error);
+                    document.getElementById('events-list').innerHTML = '<p>Ошибка загрузки мероприятий: ' + error.message + '</p>';
                 });
         }
 
         // Загрузка уведомлений
         function loadNotifications() {
             fetch(`/volunteer_system/api/notifications.php?user_id=${user.id}&user_role=organizer`)
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
+                    }
+                    return response.text();
+                })
                 .then(text => {
                     console.log('Ответ от api/notifications.php:', text);
                     let notifications;
@@ -296,16 +314,17 @@
                         notificationsList.innerHTML = '<p>У вас нет новых уведомлений.</p>';
                         return;
                     }
+                    notificationsList.innerHTML = '';
                     notifications.forEach(notif => {
                         notificationsList.innerHTML += `
-                                 <div class="alert alert-info">
-                                     ${notif.message} <small>(${new Date(notif.created_at).toLocaleString('ru-RU')})</small>
-                                 </div>
-                             `;
+                            <div class="alert alert-info">
+                                ${notif.message} <small>(${new Date(notif.created_at).toLocaleString('ru-RU')})</small>
+                            </div>
+                        `;
                     });
                 })
                 .catch(error => {
-                    document.getElementById('notifications-list').innerHTML = '<p>Ошибка загрузки уведомлений</p>';
+                    document.getElementById('notifications-list').innerHTML = '<p>Ошибка загрузки уведомлений: ' + error.message + '</p>';
                     console.error('Ошибка:', error);
                 });
         }
@@ -313,7 +332,12 @@
         // Загрузка новостей
         function loadNews() {
             fetch(`/volunteer_system/api/news.php?user_id=${user.id}&user_role=${user.role}`)
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
+                    }
+                    return response.text();
+                })
                 .then(text => {
                     console.log('Ответ от api/news.php:', text);
                     let news;
@@ -327,38 +351,39 @@
                         newsFeed.innerHTML = '<p>Новостей пока нет.</p>';
                         return;
                     }
+                    newsFeed.innerHTML = '';
                     news.forEach(item => {
                         const eventDate = item.event_date ? new Date(item.event_date).toLocaleString('ru-RU') : 'Не указано';
                         newsFeed.innerHTML += `
-                                 <div class="news-card card">
-                                     <div class="card-body">
-                                         <h5 class="card-title">${item.title || 'Без заголовка'}</h5>
-                                         <p class="card-text">
-                                             <strong>Организатор:</strong> <a href="organizer_profile.html?id=${item.organizer_id}">${item.organizer_name || 'Неизвестный организатор'}</a><br>
-                                             <strong>Мероприятие:</strong> ${item.event_title || 'Нет мероприятия'}<br>
-                                             <strong>Дата:</strong> ${eventDate}<br>
-                                             <strong>Описание:</strong> ${item.content || 'Нет описания'}
-                                         </p>
-                                         <button class="btn btn-primary" onclick="toggleLike(${item.id})" id="like-btn-${item.id}">${item.liked ? 'Убрать лайк' : 'Лайк'} (${item.likes || 0})</button>
-                                         <button class="btn btn-success" onclick="subscribeToOrganizer(${item.organizer_id})" id="subscribe-btn-${item.organizer_id}">${item.subscribed ? 'Отписаться' : 'Подписаться'}</button>
-                                         <div class="comments-section">
-                                             <h6>Комментарии:</h6>
-                                             <div id="comments-${item.id}"></div>
-                                             <form onsubmit="addComment(${item.id}); return false;">
-                                                 <div class="input-group mb-3">
-                                                     <input type="text" class="form-control" id="comment-input-${item.id}" placeholder="Написать комментарий">
-                                                     <button class="btn btn-outline-secondary" type="submit">Отправить</button>
-                                                 </div>
-                                             </form>
-                                         </div>
-                                     </div>
-                                 </div>
-                             `;
+                            <div class="news-card card">
+                                <div class="card-body">
+                                    <h5 class="card-title">${item.title || 'Без заголовка'}</h5>
+                                    <p class="card-text">
+                                        <strong>Организатор:</strong> <a href="organizer_profile.html?id=${item.organizer_id}">${item.organizer_name || 'Неизвестный организатор'}</a><br>
+                                        <strong>Мероприятие:</strong> ${item.event_title || 'Нет мероприятия'}<br>
+                                        <strong>Дата:</strong> ${eventDate}<br>
+                                        <strong>Описание:</strong> ${item.content || 'Нет описания'}
+                                    </p>
+                                    <button class="btn btn-primary" onclick="toggleLike(${item.id})" id="like-btn-${item.id}">${item.liked ? 'Убрать лайк' : 'Лайк'} (${item.likes || 0})</button>
+                                    <button class="btn btn-success" onclick="subscribeToOrganizer(${item.organizer_id})" id="subscribe-btn-${item.organizer_id}">${item.subscribed ? 'Отписаться' : 'Подписаться'}</button>
+                                    <div class="comments-section">
+                                        <h6>Комментарии:</h6>
+                                        <div id="comments-${item.id}"></div>
+                                        <form onsubmit="addComment(${item.id}); return false;">
+                                            <div class="input-group mb-3">
+                                                <input type="text" class="form-control" id="comment-input-${item.id}" placeholder="Написать комментарий">
+                                                <button class="btn btn-outline-secondary" type="submit">Отправить</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
                         loadComments(item.id);
                     });
                 })
                 .catch(error => {
-                    document.getElementById('news-feed').innerHTML = '<p>Ошибка загрузки новостей</p>';
+                    document.getElementById('news-feed').innerHTML = '<p>Ошибка загрузки новостей: ' + error.message + '</p>';
                     console.error('Ошибка:', error);
                 });
         }
@@ -434,11 +459,11 @@
                     commentsDiv.innerHTML = '';
                     comments.forEach(comment => {
                         commentsDiv.innerHTML += `
-                                 <div class="comment mb-2">
-                                     <strong>${comment.user_name}:</strong> ${comment.content}
-                                     <small>(${new Date(comment.created_at).toLocaleString('ru-RU')})</small>
-                                 </div>
-                             `;
+                            <div class="comment mb-2">
+                                <strong>${comment.user_name}:</strong> ${comment.content}
+                                <small>(${new Date(comment.created_at).toLocaleString('ru-RU')})</small>
+                            </div>
+                        `;
                     });
                 })
                 .catch(error => {

@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 $conn = new mysqli('localhost', 'root', '', 'volunteer_system');
 if ($conn->connect_error) {
+    file_put_contents('../debug.log', "Ошибка подключения к базе данных: " . $conn->connect_error . "\n", FILE_APPEND);
     http_response_code(500);
     echo json_encode(['error' => 'Ошибка подключения к базе данных: ' . $conn->connect_error]);
     exit;
@@ -25,7 +26,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $status = $_GET['status'] ?? null;
     $organizer_id = $_GET['organizer_id'] ?? null;
 
+    file_put_contents('../debug.log', "GET params: user_id=$user_id, user_role=$user_role, status=$status, organizer_id=$organizer_id\n", FILE_APPEND);
+
     if (empty($user_id) || empty($user_role)) {
+        file_put_contents('../debug.log', "Ошибка: Укажите ID пользователя и роль\n", FILE_APPEND);
         http_response_code(400);
         echo json_encode(['error' => 'Укажите ID пользователя и роль']);
         exit;
@@ -37,13 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                e.title as event_title, e.event_date, e.status,
                (SELECT COUNT(*) FROM likes l WHERE l.news_id = n.id) as likes,
                (SELECT COUNT(*) FROM likes l WHERE l.news_id = n.id AND l.user_id = ? AND l.user_role = ?) as liked,
-               (SELECT COUNT(*) FROM subscriptions s WHERE s.user_id = ? AND s.user_role = ? AND s.organizer_id = n.organizer_id) as subscribed
+               (SELECT COUNT(*) FROM subscriptions s WHERE s.volunteer_id = ? AND s.organizer_id = n.organizer_id) as subscribed
         FROM news n
         JOIN organizers o ON n.organizer_id = o.id
         LEFT JOIN events e ON n.event_id = e.id
     ';
-    $params = [$user_id, $user_role, $user_id, $user_role];
-    $types = 'isis';
+    $params = [$user_id, $user_role, $user_id];
+    $types = 'iss';
 
     if ($organizer_id) {
         $query .= ' WHERE n.organizer_id = ?';
@@ -62,6 +66,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     $query .= ' ORDER BY n.created_at DESC';
+
+    file_put_contents('../debug.log', "SQL Query: $query\n", FILE_APPEND);
+    file_put_contents('../debug.log', "Params: " . implode(', ', $params) . "\n", FILE_APPEND);
 
     $stmt = $conn->prepare($query);
     if (!$stmt) {

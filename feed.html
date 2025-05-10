@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Лента новостей</title>
+    <title>Лента мероприятий</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
     <style>
@@ -10,6 +10,7 @@
         .main-content { margin-left: 250px; padding: 20px; }
         .news-card { margin-bottom: 1rem; }
         .news-card .btn { margin-right: 5px; }
+        .filter-buttons { margin-bottom: 1rem; }
         .comments-section { margin-top: 1rem; }
     </style>
 </head>
@@ -40,43 +41,47 @@
 
 <!-- Основной контент -->
 <div class="main-content">
-    <h1>Лента новостей</h1>
+    <h1>Лента мероприятий</h1>
     <div id="profile-error" class="alert alert-danger d-none"></div>
     <div id="profile-success" class="alert alert-success d-none"></div>
 
-    <!-- Фильтры и поиск -->
+    <h3>Добро пожаловать, <span id="user-name"></span>!</h3>
+
+    <!-- Поиск -->
     <div class="mb-4">
-        <div class="row">
-            <div class="col-md-4">
-                <select class="form-control" id="filter-status" onchange="loadNews()">
-                    <option value="">Все</option>
-                    <option value="active">Активные</option>
-                    <option value="completed">Завершённые</option>
-                    <option value="recurring">Повторяющиеся</option>
-                </select>
-            </div>
-            <div class="col-md-8">
-                <input type="text" class="form-control" id="search-query" placeholder="Поиск по названию или организатору" onkeyup="loadNews()">
-            </div>
+        <div class="input-group">
+            <input type="text" class="form-control" id="search-input" placeholder="Поиск по заголовку или организатору">
+            <button class="btn btn-outline-secondary" type="button" onclick="filterNews()">Поиск</button>
         </div>
     </div>
 
-    <!-- Уведомления -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <h4>Уведомления</h4>
-            <div id="notifications-list"></div>
-        </div>
+    <!-- Фильтры -->
+    <div class="filter-buttons">
+        <button class="btn btn-outline-primary" onclick="loadNews('')">Все</button>
+        <button class="btn btn-outline-primary" onclick="loadNews('active')">Активные</button>
+        <button class="btn btn-outline-primary" onclick="loadNews('completed')">Завершённые</button>
+        <button class="btn btn-outline-primary" onclick="loadNews('recurring')">Повторяющиеся</button>
     </div>
 
     <!-- Лента новостей -->
-    <div id="news-feed"></div>
+    <div class="card">
+        <div class="card-body">
+            <h4>Новости</h4>
+            <div id="news-feed"></div>
+        </div>
+    </div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    let user, status = '', search = '';
+
+    // Функция фильтрации (доступна глобально)
+    window.filterNews = function() {
+        loadNews(status);
+    };
+
     document.addEventListener('DOMContentLoaded', function() {
-        const user = JSON.parse(localStorage.getItem('user'));
+        user = JSON.parse(localStorage.getItem('user'));
         const profileError = document.getElementById('profile-error');
         const profileSuccess = document.getElementById('profile-success');
 
@@ -87,52 +92,54 @@
             return;
         }
 
-        // Загрузка уведомлений
-        function loadNotifications() {
-            fetch(`/volunteer_system/api/notifications.php?user_id=${user.id}&user_role=volunteer`)
-                .then(response => response.json())
-                .then(notifications => {
-                    const notificationsList = document.getElementById('notifications-list');
-                    if (notifications.length === 0) {
-                        notificationsList.innerHTML = '<p>У вас нет новых уведомлений.</p>';
-                        return;
-                    }
-                    notifications.forEach(notif => {
-                        notificationsList.innerHTML += `
-                            <div class="alert alert-info">
-                                ${notif.message} <small>(${new Date(notif.created_at).toLocaleString('ru-RU')})</small>
-                            </div>
-                        `;
-                    });
-                })
-                .catch(error => {
-                    notificationsList.innerHTML = '<p>Ошибка загрузки уведомлений</p>';
-                    console.error('Ошибка:', error);
-                });
-        }
+        document.getElementById('user-name').textContent = user.name;
 
         // Загрузка новостей
-        function loadNews() {
-            const status = document.getElementById('filter-status').value;
-            const search = document.getElementById('search-query').value.toLowerCase();
+        function loadNews(newStatus = '') {
+            status = newStatus;
+            search = document.getElementById('search-input').value.toLowerCase().trim();
+            console.log('Параметры загрузки новостей:', { status, search });
+
             fetch(`/volunteer_system/api/news.php?user_id=${user.id}&user_role=${user.role}${status ? '&status=' + status : ''}`)
-                .then(response => response.json())
-                .then(news => {
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    console.log('Ответ от api/news.php:', text);
+                    let news;
+                    try {
+                        news = JSON.parse(text);
+                    } catch (e) {
+                        throw new Error(`Ошибка парсинга JSON: ${e.message}, Текст: ${text}`);
+                    }
                     const newsFeed = document.getElementById('news-feed');
                     newsFeed.innerHTML = '';
                     if (!news || news.length === 0) {
                         newsFeed.innerHTML = '<p>Новостей пока нет.</p>';
                         return;
                     }
+
+                    console.log('Новости перед фильтрацией:', news);
+
                     const filteredNews = news.filter(item => {
-                        const titleMatch = item.title && item.title.toLowerCase().includes(search);
-                        const organizerMatch = item.organizer_name && item.organizer_name.toLowerCase().includes(search);
+                        const title = item.title ? item.title.toLowerCase() : '';
+                        const organizerName = item.organizer_name ? item.organizer_name.toLowerCase() : '';
+                        const titleMatch = title.includes(search);
+                        const organizerMatch = organizerName.includes(search);
+                        console.log(`Фильтрация новости: title=${title}, organizerName=${organizerName}, search=${search}, titleMatch=${titleMatch}, organizerMatch=${organizerMatch}`);
                         return titleMatch || organizerMatch;
                     });
+
+                    console.log('Отфильтрованные новости:', filteredNews);
+
                     if (filteredNews.length === 0) {
                         newsFeed.innerHTML = '<p>Новостей по вашему запросу не найдено.</p>';
                         return;
                     }
+
                     filteredNews.forEach(item => {
                         const eventDate = item.event_date ? new Date(item.event_date).toLocaleString('ru-RU') : 'Не указано';
                         const canRegister = item.event_id && item.status === 'active' && new Date(item.event_date) > new Date();
@@ -166,7 +173,7 @@
                     });
                 })
                 .catch(error => {
-                    newsFeed.innerHTML = '<p>Ошибка загрузки новостей</p>';
+                    document.getElementById('news-feed').innerHTML = '<p>Ошибка загрузки новостей: ' + error.message + '</p>';
                     console.error('Ошибка:', error);
                 });
         }
@@ -192,7 +199,7 @@
                         profileError.textContent = data.error;
                         profileError.classList.remove('d-none');
                     } else {
-                        loadNews();
+                        loadNews(status);
                     }
                 })
                 .catch(error => {
@@ -223,7 +230,7 @@
                         profileError.textContent = data.error;
                         profileError.classList.remove('d-none');
                     } else {
-                        loadNews();
+                        loadNews(status);
                     }
                 })
                 .catch(error => {
@@ -324,8 +331,10 @@
                 });
         }
 
-        // Загрузка уведомлений и новостей при старте
-        loadNotifications();
+        // Экспорт функции для фильтрации
+        window.loadNews = loadNews;
+
+        // Загрузка новостей при старте
         loadNews();
     });
 </script>
