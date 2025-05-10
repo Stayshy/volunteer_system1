@@ -2,63 +2,81 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Система учета волонтерской активности</title>
+    <title>Система волонтеров</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
 </head>
 <body>
 <div class="container mt-5">
-    <h1 class="text-center mb-4">Система волонтерской активности</h1>
+    <h1 class="mb-4">Система волонтеров</h1>
     <div class="row">
-        <!-- Login Form -->
+        <!-- Форма входа -->
         <div class="col-md-6">
-            <h2>Вход</h2>
-            <div id="login-error" class="alert alert-danger d-none"></div>
-            <div id="login-success" class="alert alert-success d-none"></div>
-            <div class="mb-3">
-                <label for="login-email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="login-email" required>
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Вход</h2>
+                    <div id="login-error" class="alert alert-danger d-none"></div>
+                    <div id="login-success" class="alert alert-success d-none"></div>
+                    <form>
+                        <div class="mb-3">
+                            <label for="login-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="login-email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="login-password" class="form-label">Пароль</label>
+                            <input type="password" class="form-control" id="login-password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="login-btn">Войти</button>
+                    </form>
+                </div>
             </div>
-            <div class="mb-3">
-                <label for="login-password" class="form-label">Пароль</label>
-                <input type="password" class="form-control" id="login-password" required>
-            </div>
-            <button id="login-btn" class="btn btn-primary">Войти</button>
         </div>
-        <!-- Registration Form -->
+
+        <!-- Форма регистрации -->
         <div class="col-md-6">
-            <h2>Регистрация</h2>
-            <div id="register-error" class="alert alert-danger d-none"></div>
-            <div id="register-success" class="alert alert-success d-none"></div>
-            <div class="mb-3">
-                <label for="register-name" class="form-label">Имя</label>
-                <input type="text" class="form-control" id="register-name" required>
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Регистрация</h2>
+                    <div id="register-error" class="alert alert-danger d-none"></div>
+                    <div id="register-success" class="alert alert-success d-none"></div>
+                    <form>
+                        <div class="mb-3">
+                            <label for="register-name" class="form-label">Имя</label>
+                            <input type="text" class="form-control" id="register-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="register-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="register-email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="register-password" class="form-label">Пароль</label>
+                            <input type="password" class="form-control" id="register-password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="register-role" class="form-label">Роль</label>
+                            <select class="form-control" id="register-role">
+                                <option value="volunteer">Волонтёр</option>
+                                <option value="organizer">Организатор</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 d-none" id="register-phone-group">
+                            <label for="register-phone" class="form-label">Телефон</label>
+                            <input type="text" class="form-control" id="register-phone">
+                        </div>
+                        <div class="mb-3 d-none" id="register-organization-group">
+                            <label for="register-organization" class="form-label">Организация</label>
+                            <input type="text" class="form-control" id="register-organization">
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="register-btn">Зарегистрироваться</button>
+                    </form>
+                </div>
             </div>
-            <div class="mb-3">
-                <label for="register-email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="register-email" required>
-            </div>
-            <div class="mb-3">
-                <label for="register-password" class="form-label">Пароль</label>
-                <input type="password" class="form-control" id="register-password" required>
-            </div>
-            <div class="mb-3">
-                <label for="register-role" class="form-label">Роль</label>
-                <select class="form-control" id="register-role" required>
-                    <option value="volunteer">Волонтер</option>
-                    <option value="organizer">Организатор</option>
-                </select>
-            </div>
-            <div class="mb-3" id="register-phone-group">
-                <label for="register-phone" class="form-label">Телефон (для волонтеров)</label>
-                <input type="text" class="form-control" id="register-phone">
-            </div>
-            <div class="mb-3 d-none" id="register-organization-group">
-                <label for="register-organization" class="form-label">Организация (для организаторов)</label>
-                <input type="text" class="form-control" id="register-organization">
-            </div>
-            <button id="register-btn" class="btn btn-success">Зарегистрироваться</button>
         </div>
+    </div>
+
+    <!-- Ссылка на главную страницу -->
+    <div class="mt-4">
+        <a href="feed.html" class="btn btn-info">Перейти к ленте новостей</a>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

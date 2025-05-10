@@ -17,6 +17,7 @@
         }
         .volunteer-book h4 { margin-bottom: 15px; }
         .volunteer-book .card { margin-bottom: 10px; }
+        .rating-stars { color: #f39c12; }
     </style>
 </head>
 <body>
@@ -35,6 +36,7 @@
             <p><strong>Статистика:</strong> <span id="user-stats"></span></p>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">Редактировать профиль</button>
             <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#volunteerBookModal">Волонтёрская книжка</button>
+            <a href="feed.html" class="btn btn-info">Лента новостей</a>
             <a href="index.html" class="btn btn-secondary" onclick="localStorage.removeItem('user');">Выйти</a>
         </div>
     </div>
@@ -158,6 +160,7 @@
                     return;
                 }
                 data.forEach(reg => {
+                    const stars = '★'.repeat(reg.rating || 0) + '☆'.repeat(5 - (reg.rating || 0));
                     book.innerHTML += `
                     <div class="card">
                         <div class="card-body">
@@ -165,7 +168,9 @@
                             <p class="card-text">
                                 <strong>Дата:</strong> ${new Date(reg.event_date).toLocaleDateString('ru-RU')}<br>
                                 <strong>Часы:</strong> ${reg.hours || 0}<br>
-                                <strong>Описание:</strong> ${reg.description || 'Нет описания'}
+                                <strong>Описание:</strong> ${reg.description || 'Нет описания'}<br>
+                                <strong>Рейтинг:</strong> <span class="rating-stars">${stars}</span><br>
+                                <strong>Комментарий:</strong> ${reg.comment || 'Нет комментария'}
                             </p>
                         </div>
                     </div>

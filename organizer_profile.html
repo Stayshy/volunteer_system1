@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Профиль организатора</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+    <style>
+        .sidebar { position: fixed; top: 0; bottom: 0; left: 0; z-index: 100; padding-top: 56px; }
+        .main-content { margin-left: 250px; padding: 20px; }
+        .organizer-card { margin-bottom: 1rem; }
+        .event-card, .news-card { margin-bottom: 1rem; }
+        .news-card .btn { margin-right: 5px; }
+        .comments-section { margin-top: 1rem; }
+    </style>
+</head>
+<body>
+<!-- Боковая панель -->
+<nav class="sidebar bg-light">
+    <div class="p-3">
+        <h4>Меню</h4>
+        <ul class="nav flex-column" id="sidebar-menu">
+            <!-- Динамически заполняется в зависимости от роли -->
+        </ul>
+    </div>
+</nav>
+
+<!-- Основной контент -->
+<div class="main-content">
+    <h1>Профиль организатора</h1>
+    <div id="profile-error" class="alert alert-danger d-none"></div>
+    <div id="profile-success" class="alert alert-success d-none"></div>
+
+    <!-- Информация об организаторе -->
+    <div class="organizer-card card">
+        <div class="card-body">
+            <h3 id="organizer-name">Загрузка...</h3>
+            <p><strong>Email:</strong> <span id="organizer-email">Загрузка...</span></p>
+            <p><strong>Телефон:</strong> <span id="organizer-phone">Загрузка...</span></p>
+            <p><strong>Организация:</strong> <span id="organizer-org">Загрузка...</span></p>
+            <p><strong>Аватар:</strong> <img id="organizer-avatar" src="assets/images/default.jpg" alt="Аватар" style="max-width: 100px;"></p>
+            <p><strong>Подписчиков:</strong> <span id="organizer-subscribers">Загрузка...</span></p>
+            <p><strong>Мероприятий:</strong> <span id="organizer-events">Загрузка...</span></p>
+            <button class="btn btn-success" id="subscribe-btn" onclick="subscribeToOrganizer()">Подписаться</button>
+            <button class="btn btn-primary" id="edit-profile-btn" data-bs-toggle="modal" data-bs-target="#editProfileModal">Редактировать профиль</button>
+        </div>
+    </div>
+
+    <!-- Лента мероприятий -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h4>Мероприятия организатора</h4>
+            <div id="events-list">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- Лента новостей -->
+    <div class="card">
+        <div class="card-body">
+            <h4>Новости организатора</h4>
+            <div id="news-feed">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для редактирования профиля -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editProfileModalLabel">Редактировать профиль</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-profile-form">
+                        <div class="mb-3">
+                            <label for="edit-name" class="form-label">Имя</label>
+                            <input type="text" class="form-control" id="edit-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="edit-email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-phone" class="form-label">Телефон</label>
+                            <input type="text" class="form-control" id="edit-phone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-organization" class="form-label">Организация</label>
+                            <input type="text" class="form-control" id="edit-organization">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-avatar" class="form-label">URL аватара</label>
+                            <input type="text" class="form-control" id="edit-avatar">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const user = JSON.parse(localStorage.getItem('user'));
+        const profileError = document.getElementById('profile-error');
+        const profileSuccess = document.getElementById('profile-success');
+        const urlParams = new URLSearchParams(window.location.search);
+        const organizerId = urlParams.get('id');
+
+        // Настройка бокового меню в зависимости от роли
+        const sidebarMenu = document.getElementById('sidebar-menu');
+        if (user && user.role === 'volunteer') {
+            sidebarMenu.innerHTML = `
+                <li class="nav-item">
+                    <a class="nav-link" href="feed.html">Лента мероприятий</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="volunteer.html">Профиль</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#achievements">Достижения</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#registrations">Регистрации</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="index.html" onclick="localStorage.removeItem('user');">Выйти</a>
+                </li>
+            `;
+        } else if (user && user.role === 'organizer') {
+            sidebarMenu.innerHTML = `
+                <li class="nav-item">
+                    <a class="nav-link" href="organizer.html">Лента мероприятий</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="organizer_profile.html?id=${user.id}">Профиль</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#achievements">Достижения</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#registrations">Регистрации</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="index.html" onclick="localStorage.removeItem('user');">Выйти</a>
+                </li>
+            `;
+        } else {
+            sidebarMenu.innerHTML = `
+                <li class="nav-item">
+                    <a class="nav-link" href="index.html">Войти</a>
+                </li>
+            `;
+        }
+
+        if (!organizerId) {
+            profileError.textContent = 'Укажите ID организатора';
+            profileError.classList.remove('d-none');
+            return;
+        }
+
+        // Загрузка информации об организаторе
+        fetch(`/volunteer_system/api/organizer.php?id=${organizerId}${user ? '&user_id=' + user.id + '&user_role=' + user.role : ''}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
+                }
+                return response.text();
+            })
+            .then(text => {
+                console.log('Ответ от api/organizer.php:', text);
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    throw new Error(`Ошибка парсинга JSON: ${e.message}, Текст: ${text}`);
+                }
+                if (data.error) {
+                    profileError.textContent = data.error;
+                    profileError.classList.remove('d-none');
+                    return;
+                }
+                document.getElementById('organizer-name').textContent = data.name || 'Не указано';
+                document.getElementById('organizer-email').textContent = data.email || 'Не указано';
+                document.getElementById('organizer-phone').textContent = data.phone || 'Не указан';
+                document.getElementById('organizer-org').textContent = data.organization || 'Не указано';
+                const avatarElement = document.getElementById('organizer-avatar');
+                avatarElement.src = data.avatar || 'assets/images/default.jpg';
+                avatarElement.onerror = () => {
+                    console.log('Ошибка загрузки аватарки, использую дефолтную');
+                    avatarElement.src = 'assets/images/default.jpg';
+                };
+                document.getElementById('organizer-subscribers').textContent = data.subscribers || 0;
+                document.getElementById('organizer-events').textContent = data.event_count || 0;
+                if (user && user.role === 'volunteer') {
+                    document.getElementById('subscribe-btn').textContent = data.subscribed ? 'Отписаться' : 'Подписаться';
+                } else {
+                    document.getElementById('subscribe-btn').style.display = 'none';
+                }
+                if (user && user.role === 'organizer' && user.id == organizerId) {
+                    document.getElementById('edit-profile-btn').style.display = 'inline-block';
+                    document.getElementById('edit-name').value = data.name || '';
+                    document.getElementById('edit-email').value = data.email || '';
+                    document.getElementById('edit-phone').value = data.phone || '';
+                    document.getElementById('edit-organization').value = data.organization || '';
+                    document.getElementById('edit-avatar').value = data.avatar || '';
+                } else {
+                    document.getElementById('edit-profile-btn').style.display = 'none';
+                }
+
+                // Загрузка мероприятий организатора
+                fetch(`/volunteer_system/api/events.php?organizer_id=${organizerId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
+                        }
+                        return response.text();
+                    })
+                    .then(text => {
+                        console.log('Ответ от api/events.php:', text);
+                        let events;
+                        try {
+                            events = JSON.parse(text);
+                        } catch (e) {
+                            throw new Error(`Ошибка парсинга JSON: ${e.message}, Текст: ${text}`);
+                        }
+                        const eventsList = document.getElementById('events-list');
+                        if (events.length === 0) {
+                            eventsList.innerHTML = '<p>У организатора пока нет мероприятий.</p>';
+                            return;
+                        }
+                        eventsList.innerHTML = '';
+                        events.forEach(event => {
+                            const eventDate = new Date(event.event_date);
+                            eventsList.innerHTML += `
+                                <div class="event-card card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${event.title || 'Без названия'}</h5>
+                                        <p class="card-text">
+                                            <strong>Дата:</strong> ${eventDate.toLocaleString('ru-RU')}<br>
+                                            <strong>Максимум участников:</strong> ${event.max_participants || 'Не указано'}<br>
+                                            <strong>Часы:</strong> ${event.hours || 'Не указано'}<br>
+                                            <strong>Статус:</strong> ${event.status === 'active' ? 'Активное' : event.status === 'completed' ? 'Завершённое' : event.status === 'recurring' ? 'Повторяющееся' : 'Неизвестный статус'}<br>
+                                            <strong>Описание:</strong> ${event.description || 'Нет описания'}
+                                        </p>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    })
+                    .catch(error => {
+                        document.getElementById('events-list').innerHTML = '<p>Ошибка загрузки мероприятий: ' + error.message + '</p>';
+                        console.error('Ошибка:', error);
+                    });
+
+                // Загрузка новостей организатора
+                fetch(`/volunteer_system/api/news.php?organizer_id=${organizerId}${user ? '&user_id=' + user.id + '&user_role=' + user.role : ''}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
+                        }
+                        return response.text();
+                    })
+                    .then(text => {
+                        console.log('Ответ от api/news.php:', text);
+                        let news;
+                        try {
+                            news = JSON.parse(text);
+                        } catch (e) {
+                            throw new Error(`Ошибка парсинга JSON: ${e.message}, Текст: ${text}`);
+                        }
+                        const newsFeed = document.getElementById('news-feed');
+                        if (news.length === 0) {
+                            newsFeed.innerHTML = '<p>У организатора пока нет новостей.</p>';
+                            return;
+                        }
+                        newsFeed.innerHTML = '';
+                        news.forEach(item => {
+                            const eventDate = item.event_date ? new Date(item.event_date).toLocaleString('ru-RU') : 'Не указано';
+                            const canRegister = user && user.role === 'volunteer' && item.event_id && item.status === 'active' && new Date(item.event_date) > new Date();
+                            newsFeed.innerHTML += `
+                                <div class="news-card card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${item.title || 'Без заголовка'}</h5>
+                                        <p class="card-text">
+                                            <strong>Мероприятие:</strong> ${item.event_title || 'Нет мероприятия'}<br>
+                                            <strong>Дата:</strong> ${eventDate}<br>
+                                            <strong>Описание:</strong> ${item.content || 'Нет описания'}
+                                        </p>
+                                        ${user ? `
+                                            <button class="btn btn-primary" onclick="toggleLike(${item.id})" id="like-btn-${item.id}">${item.liked ? 'Убрать лайк' : 'Лайк'} (${item.likes || 0})</button>
+                                            ${canRegister ? `<button class="btn btn-info" onclick="registerForEvent(${item.event_id})">Зарегистрироваться</button>` : ''}
+                                            <div class="comments-section">
+                                                <h6>Комментарии:</h6>
+                                                <div id="comments-${item.id}"></div>
+                                                <form onsubmit="addComment(${item.id}); return false;">
+                                                    <div class="input-group mb-3">
+                                                        <input type="text" class="form-control" id="comment-input-${item.id}" placeholder="Написать комментарий">
+                                                        <button class="btn btn-outline-secondary" type="submit">Отправить</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `;
+                            if (user) {
+                                loadComments(item.id);
+                            }
+                        });
+                    })
+                    .catch(error => {
+                        document.getElementById('news-feed').innerHTML = '<p>Ошибка загрузки новостей: ' + error.message + '</p>';
+                        console.error('Ошибка:', error);
+                    });
+            })
+            .catch(error => {
+                profileError.textContent = 'Ошибка загрузки профиля: ' + error.message;
+                profileError.classList.remove('d-none');
+                console.error('Ошибка:', error);
+                // Очищаем поля, чтобы не оставались в состоянии "Загрузка..."
+                document.getElementById('organizer-name').textContent = 'Ошибка';
+                document.getElementById('organizer-email').textContent = 'Ошибка';
+                document.getElementById('organizer-phone').textContent = 'Ошибка';
+                document.getElementById('organizer-org').textContent = 'Ошибка';
+                document.getElementById('organizer-subscribers').textContent = 'Ошибка';
+                document.getElementById('organizer-events').textContent = 'Ошибка';
+            });
+
+        // Подписка/отписка
+        window.subscribeToOrganizer = function() {
+            if (!user || user.role !== 'volunteer') {
+                alert('Войдите как волонтёр, чтобы подписаться');
+                return;
+            }
+            fetch('/volunteer_system/api/subscriptions.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: user.id,
+                    user_role: user.role,
+                    organizer_id: organizerId
+                }),
+                credentials: 'same-origin'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        profileError.textContent = data.error;
+                        profileError.classList.remove('d-none');
+                    } else {
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    profileError.textContent = 'Ошибка при подписке: ' + error.message;
+                    profileError.classList.remove('d-none');
+                    console.error('Ошибка:', error);
+                });
+        };
+
+        // Лайк/снятие лайка
+        window.toggleLike = function(newsId) {
+            fetch('/volunteer_system/api/likes.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    news_id: newsId,
+                    user_id: user.id,
+                    user_role: user.role
+                }),
+                credentials: 'same-origin'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        profileError.textContent = data.error;
+                        profileError.classList.remove('d-none');
+                    } else {
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    profileError.textContent = 'Ошибка при обработке лайка: ' + error.message;
+                    profileError.classList.remove('d-none');
+                    console.error('Ошибка:', error);
+                });
+        };
+
+        // Регистрация на мероприятие
+        window.registerForEvent = function(eventId) {
+            fetch('/volunteer_system/api/registrations.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    volunteer_id: user.id,
+                    event_id: eventId
+                }),
+                credentials: 'same-origin'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        profileError.textContent = data.error;
+                        profileError.classList.remove('d-none');
+                    } else {
+                        profileSuccess.textContent = 'Вы зарегистрированы на мероприятие!';
+                        profileSuccess.classList.remove('d-none');
+                    }
+                })
+                .catch(error => {
+                    profileError.textContent = 'Ошибка при регистрации: ' + error.message;
+                    profileError.classList.remove('d-none');
+                    console.error('Ошибка:', error);
+                });
+        };
+
+        // Загрузка комментариев
+        window.loadComments = function(newsId) {
+            fetch(`/volunteer_system/api/comments.php?news_id=${newsId}`)
+                .then(response => response.json())
+                .then(comments => {
+                    const commentsDiv = document.getElementById(`comments-${newsId}`);
+                    commentsDiv.innerHTML = '';
+                    comments.forEach(comment => {
+                        commentsDiv.innerHTML += `
+                            <div class="comment mb-2">
+                                <strong>${comment.user_name}:</strong> ${comment.content}
+                                <small>(${new Date(comment.created_at).toLocaleString('ru-RU')})</small>
+                            </div>
+                        `;
+                    });
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки комментариев:', error);
+                });
+        };
+
+        // Добавление комментария
+        window.addComment = function(newsId) {
+            const content = document.getElementById(`comment-input-${newsId}`).value.trim();
+            if (!content) {
+                alert('Введите комментарий');
+                return;
+            }
+
+            fetch('/volunteer_system/api/comments.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    news_id: newsId,
+                    user_id: user.id,
+                    user_role: user.role,
+                    content: content
+                }),
+                credentials: 'same-origin'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        profileError.textContent = data.error;
+                        profileError.classList.remove('d-none');
+                    } else {
+                        document.getElementById(`comment-input-${newsId}`).value = '';
+                        loadComments(newsId);
+                    }
+                })
+                .catch(error => {
+                    profileError.textContent = 'Ошибка при добавлении комментария: ' + error.message;
+                    profileError.classList.remove('d-none');
+                    console.error('Ошибка:', error);
+                });
+        };
+
+        // Обработка редактирования профиля
+        document.getElementById('edit-profile-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const data = {
+                id: organizerId,
+                name: document.getElementById('edit-name').value.trim(),
+                email: document.getElementById('edit-email').value.trim(),
+                phone: document.getElementById('edit-phone').value.trim() || null,
+                organization: document.getElementById('edit-organization').value.trim() || null,
+                avatar: document.getElementById('edit-avatar').value.trim() || null
+            };
+
+            console.log('Редактирование профиля:', JSON.stringify(data));
+
+            fetch('/volunteer_system/api/organizer.php', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(data),
+                credentials: 'same-origin'
+            })
+                .then(response => response.text().then(text => ({ ok: response.ok, status: response.status, text })))
+                .then(({ ok, status, text }) => {
+                    console.log('Тело ответа (профиль):', text);
+                    let data;
+                    try {
+                        data = JSON.parse(text);
+                    } catch (e) {
+                        throw new Error(`Ошибка парсинга JSON: ${e.message}, Текст: ${text}`);
+                    }
+                    if (!ok) {
+                        throw new Error(`HTTP ${status}: ${data.error || 'Неизвестная ошибка'}`);
+                    }
+                    if (data.error) {
+                        profileError.textContent = data.error;
+                        profileError.classList.remove('d-none');
+                    } else {
+                        profileSuccess.textContent = 'Профиль обновлён!';
+                        profileSuccess.classList.remove('d-none');
+                        localStorage.setItem('user', JSON.stringify({
+                            id: user.id,
+                            name: data.name,
+                            role: user.role
+                        }));
+                        document.getElementById('organizer-name').textContent = data.name || 'Не указано';
+                        document.getElementById('organizer-email').textContent = data.email || 'Не указано';
+                        document.getElementById('organizer-phone').textContent = data.phone || 'Не указан';
+                        document.getElementById('organizer-org').textContent = data.organization || 'Не указано';
+                        const avatarElement = document.getElementById('organizer-avatar');
+                        avatarElement.src = data.avatar || 'assets/images/default.jpg';
+                        avatarElement.onerror = () => {
+                            console.log('Ошибка загрузки аватарки после редактирования, использую дефолтную');
+                            avatarElement.src = 'assets/images/default.jpg';
+                        };
+                        bootstrap.Modal.getInstance(document.getElementById('editProfileModal')).hide();
+                        setTimeout(() => profileSuccess.classList.add('d-none'), 3000);
+                    }
+                })
+                .catch(error => {
+                    profileError.textContent = 'Ошибка при обновлении профиля: ' + error.message;
+                    profileError.classList.remove('d-none');
+                    console.error('Ошибка:', error);
+                });
+        });
+    });
+</script>
+</body>
+</html>

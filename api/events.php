@@ -40,8 +40,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     $stmt = $conn->prepare($query);
+    if (!$stmt) {
+        file_put_contents('../debug.log', "Ошибка подготовки GET-запроса в events: " . $conn->error . "\n", FILE_APPEND);
+        http_response_code(500);
+        echo json_encode(['error' => 'Ошибка подготовки запроса: ' . $conn->error]);
+        exit;
+    }
+
     $stmt->bind_param($types, ...$params);
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        file_put_contents('../debug.log', "Ошибка выполнения GET-запроса в events: " . $stmt->error . "\n", FILE_APPEND);
+        http_response_code(500);
+        echo json_encode(['error' => 'Ошибка выполнения запроса: ' . $stmt->error]);
+        exit;
+    }
+
     $result = $stmt->get_result();
     $events = $result->fetch_all(MYSQLI_ASSOC);
 
@@ -50,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode($raw_input, true);
     if (!$data) {
+        file_put_contents('../debug.log', "Ошибка: Неверный формат данных для POST в events\n", FILE_APPEND);
         http_response_code(400);
         echo json_encode(['error' => 'Неверный формат данных']);
         exit;
@@ -64,6 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $hours = $data['hours'] ?? 0;
 
     if (empty($title) || empty($event_date) || empty($organizer_id)) {
+        file_put_contents('../debug.log', "Ошибка: Пустые обязательные поля в events - title: $title, event_date: $event_date, organizer_id: $organizer_id\n", FILE_APPEND);
         http_response_code(400);
         echo json_encode(['error' => 'Заполните обязательные поля: название, дата, организатор']);
         exit;
@@ -71,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $stmt = $conn->prepare('INSERT INTO events (title, description, event_date, max_participants, organizer_id, status, hours) VALUES (?, ?, ?, ?, ?, ?, ?)');
     if (!$stmt) {
+        file_put_contents('../debug.log', "Ошибка подготовки POST-запроса в events: " . $conn->error . "\n", FILE_APPEND);
         http_response_code(500);
         echo json_encode(['error' => 'Ошибка подготовки запроса: ' . $conn->error]);
         exit;
@@ -78,12 +94,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $stmt->bind_param('sssisis', $title, $description, $event_date, $max_participants, $organizer_id, $status, $hours);
     if (!$stmt->execute()) {
+        file_put_contents('../debug.log', "Ошибка выполнения POST-запроса в events: " . $stmt->error . "\n", FILE_APPEND);
         http_response_code(500);
         echo json_encode(['error' => 'Ошибка выполнения запроса: ' . $stmt->error]);
         exit;
     }
 
     if ($stmt->affected_rows === 0) {
+        file_put_contents('../debug.log', "Ошибка: Мероприятие не создано\n", FILE_APPEND);
         http_response_code(500);
         echo json_encode(['error' => 'Мероприятие не создано']);
         exit;
@@ -94,6 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 } elseif ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $data = json_decode($raw_input, true);
     if (!$data) {
+        file_put_contents('../debug.log', "Ошибка: Неверный формат данных для PUT в events\n", FILE_APPEND);
         http_response_code(400);
         echo json_encode(['error' => 'Неверный формат данных']);
         exit;
@@ -108,14 +127,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $hours = $data['hours'] ?? 0;
 
     if (empty($id) || empty($title) || empty($event_date)) {
+        file_put_contents('../debug.log', "Ошибка: Пустые обязательные поля для PUT в events - id: $id, title: $title, event_date: $event_date\n", FILE_APPEND);
         http_response_code(400);
         echo json_encode(['error' => 'Заполните обязательные поля: ID, название, дата']);
         exit;
     }
 
     $stmt = $conn->prepare('UPDATE events SET title = ?, description = ?, event_date = ?, max_participants = ?, status = ?, hours = ? WHERE id = ?');
+    if (!$stmt) {
+        file_put_contents('../debug.log', "Ошибка подготовки PUT-запроса в events: " . $conn->error . "\n", FILE_APPEND);
+        http_response_code(500);
+        echo json_encode(['error' => 'Ошибка подготовки запроса: ' . $conn->error]);
+        exit;
+    }
+
     $stmt->bind_param('sssissi', $title, $description, $event_date, $max_participants, $status, $hours, $id);
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        file_put_contents('../debug.log', "Ошибка выполнения PUT-запроса в events: " . $stmt->error . "\n", FILE_APPEND);
+        http_response_code(500);
+        echo json_encode(['error' => 'Ошибка выполнения запроса: ' . $stmt->error]);
+        exit;
+    }
 
     if ($stmt->affected_rows > 0 || $stmt->errno === 0) {
         http_response_code(200);
@@ -127,6 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     $event_id = $_GET['id'] ?? '';
     if (empty($event_id)) {
+        file_put_contents('../debug.log', "Ошибка: Укажите ID мероприятия для DELETE в events\n", FILE_APPEND);
         http_response_code(400);
         echo json_encode(['error' => 'Укажите ID мероприятия']);
         exit;
