@@ -18,7 +18,160 @@
         .volunteer-book h4 { margin-bottom: 15px; }
         .volunteer-book .card { margin-bottom: 10px; }
         .rating-stars { color: #f39c12; }
+        #certificateModal .modal-dialog {
+            width: 600px; /* Соответствует ширине certificatePreview (560px) + отступы */
+            max-width: none; /* Убираем ограничение Bootstrap */
+        }
+        #certificateModal .modal-body {
+            padding: 20px;
+            max-height: 90vh; /* Ограничиваем высоту модального окна */
+            overflow-y: auto; /* Добавляем прокрутку, если содержимое не помещается */
+        }
+        #certificatePreview {
+            position: relative;
+            width: 560px; /* Уменьшено для предпросмотра */
+            height: 792px; /* Пропорционально A4 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: #333;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            box-sizing: border-box;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+        }
+        #certificatePreview .certificate-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #certificatePreview .certificate-background img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Растягиваем картинку */
+        }
+        #certificatePreview .certificate-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+        #certificatePreview h2 {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        #certificatePreview p {
+            font-size: 20px;
+            margin: 5px 0;
+        }
+        #certificatePreview #certificateIssueDate {
+            margin-bottom: 15px; /* Отступ снизу, чтобы не перекрывать подпись */
+        }
+        #certificatePreview .wish {
+            font-style: italic;
+            margin-top: 20px;
+        }
+        #certificatePreview .signature {
+            position: absolute;
+            bottom: 10px; /* Уменьшаем отступ снизу, чтобы опустить надпись */
+            font-size: 16px;
+            font-weight: bold;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #certificatePreview, #certificatePreview * {
+                visibility: visible;
+            }
+            #certificatePreview {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 20px;
+                box-sizing: border-box;
+                page-break-after: always;
+                page-break-inside: avoid; /* Предотвращаем разрыв на две страницы */
+            }
+            #certificatePreview .certificate-background img {
+                width: 210mm;
+                height: 297mm;
+            }
+            #certificatePreview .certificate-content {
+                width: 210mm;
+                height: 297mm;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                overflow: hidden; /* Предотвращаем выход содержимого за пределы */
+            }
+            #certificatePreview h2 {
+                font-size: 36px;
+                font-weight: bold;
+                margin-bottom: 20px;
+            }
+            #certificatePreview p {
+                font-size: 20px;
+                margin: 5px 0;
+            }
+            #certificatePreview #certificateIssueDate {
+                margin-bottom: 15px; /* Отступ снизу, чтобы не перекрывать подпись */
+            }
+            #certificatePreview .wish {
+                font-style: italic;
+                margin-top: 20px;
+            }
+            #certificatePreview .signature {
+                position: absolute;
+                bottom: 10px; /* Уменьшаем отступ снизу, чтобы опустить надпись */
+                font-size: 16px;
+                font-weight: bold;
+            }
+        }
+        /* Стили для модального окна с информацией о мероприятии */
+        #eventModal .modal-content {
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        #eventModal .modal-header {
+            background: linear-gradient(90deg, #007bff, #00c6ff);
+            color: white;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+        #eventModal .modal-body {
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        #eventModal .modal-body p {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        #eventModal .modal-body strong {
+            color: #007bff;
+        }
+        #eventModal .modal-footer {
+            background: #f1f3f5;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+        }
     </style>
+    <!-- Подключаем html2pdf.js для генерации PDF на клиенте -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 <div class="container mt-5">
@@ -35,7 +188,7 @@
             <p><strong>Аватар:</strong> <img id="user-avatar" src="" alt="Аватар" style="max-width: 100px;"></p>
             <p><strong>Статистика:</strong> <span id="user-stats"></span></p>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">Редактировать профиль</button>
-            <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#volunteerBookModal">Волонтёрская книжка</button>
+            <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#volunteerBookModal" id="volunteerBookButton">Волонтёрская книжка</button>
             <a href="feed.html" class="btn btn-info">Лента новостей</a>
             <a href="index.html" class="btn btn-secondary" onclick="localStorage.removeItem('user');">Выйти</a>
         </div>
@@ -97,12 +250,182 @@
             </div>
         </div>
     </div>
+
+    <!-- Модальное окно для предпросмотра грамоты -->
+    <div class="modal fade" id="certificateModal" tabindex="-1" aria-labelledby="certificateModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="certificateModalLabel">Предпросмотр грамоты</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="certificatePreview">
+                        <div class="certificate-background">
+                            <img src="/volunteer_system/assets/images/certificate_background.avif" alt="Background">
+                        </div>
+                        <div class="certificate-content">
+                            <h2>Сертификат</h2>
+                            <p id="certificateVolunteer">награждается [Volunteer Name]</p>
+                            <p id="certificateEvent">за участие в волонтерском мероприятии [Event Title]</p>
+                            <p id="certificateOrganizer">организованном [Organizer Name]</p>
+                            <p id="certificateDate">проведенном [Event Date]</p>
+                            <p id="certificateHours">[Hours]</p>
+                            <p class="wish">Спасибо за неравнодушие и вклад в общее дело!</p>
+                            <p id="certificateIssueDate">Выдано: [Issue Date]</p>
+                            <div class="signature">Волонтерский портал</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="printCertificate()">Печать</button>
+                    <button type="button" class="btn btn-success" onclick="saveCertificate()">Сохранить</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для информации о мероприятии -->
+    <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="eventModalLabel">Информация о мероприятии</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Название:</strong> <span id="eventTitle"></span></p>
+                    <p><strong>Дата:</strong> <span id="eventDate"></span></p>
+                    <p><strong>Часы:</strong> <span id="eventHours"></span></p>
+                    <p><strong>Описание:</strong> <span id="eventDescription"></span></p>
+                    <p><strong>Статус:</strong> <span id="eventStatus"></span></p>
+                    <p><strong>Организатор:</strong> <a id="eventOrganizerLink" href="#"><span id="eventOrganizer"></span></a></p>
+                    <p><strong>Рейтинг:</strong> <span id="eventRating" class="rating-stars"></span></p>
+                    <p><strong>Комментарий:</strong> <span id="eventComment"></span></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js"></script>
 <script>
+    let user; // Делаем user глобальным для использования в функциях
+    let currentEventId; // Для хранения ID мероприятия при генерации грамоты
+    let certificateData; // Для хранения данных грамоты
+
+    // Генерация предпросмотра грамоты
+    window.previewCertificate = function(eventId) {
+        console.log('previewCertificate вызвана:', { eventId });
+        currentEventId = eventId;
+
+        // Запрашиваем данные с сервера
+        const url = `/volunteer_system/api/certificate.php?volunteer_id=${user.id}&event_id=${eventId}`;
+        fetch(url)
+            .then(response => {
+                console.log('Ответ получен, статус:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Данные получены:', data);
+                certificateData = data;
+
+                // Заполняем предпросмотр
+                document.getElementById('certificateVolunteer').textContent = `награждается ${data.volunteer_name}`;
+                document.getElementById('certificateEvent').textContent = `за участие в волонтерском мероприятии ${data.event_title}`;
+                document.getElementById('certificateOrganizer').textContent = `организованном ${data.organizer_name}`;
+                document.getElementById('certificateDate').textContent = `проведенном ${data.event_date}`;
+                document.getElementById('certificateHours').textContent = `В количестве часов: ${data.hours}`;
+                document.getElementById('certificateIssueDate').textContent = `Выдано: ${data.issue_date}`;
+
+                const modal = new bootstrap.Modal(document.getElementById('certificateModal'));
+
+                // Переносим фокус на кнопку предпросмотра перед закрытием volunteerBookModal
+                const volunteerBookModal = document.getElementById('volunteerBookModal');
+                const volunteerBookModalInstance = bootstrap.Modal.getInstance(volunteerBookModal);
+                if (volunteerBookModalInstance) {
+                    volunteerBookModalInstance.hide();
+                }
+
+                // Переносим фокус на элемент вне модального окна
+                document.getElementById('volunteerBookButton').focus();
+
+                modal.show();
+            })
+            .catch(error => {
+                document.getElementById('profile-error').textContent = 'Ошибка при загрузке данных грамоты: ' + error.message;
+                document.getElementById('profile-error').classList.remove('d-none');
+                console.error('Ошибка:', error);
+            });
+    };
+
+    // Печать грамоты
+    window.printCertificate = function() {
+        console.log('printCertificate вызвана');
+        if (!certificateData) {
+            document.getElementById('profile-error').textContent = 'Ошибка: данные грамоты не загружены.';
+            document.getElementById('profile-error').classList.remove('d-none');
+            return;
+        }
+        // Вызываем печать текущего окна
+        window.print();
+    };
+
+    // Сохранение грамоты как PDF
+    window.saveCertificate = function() {
+        console.log('saveCertificate вызвана');
+        if (!certificateData) {
+            document.getElementById('profile-error').textContent = 'Ошибка: данные грамоты не загружены.';
+            document.getElementById('profile-error').classList.remove('d-none');
+            return;
+        }
+
+        const element = document.getElementById('certificatePreview');
+        // Сохраняем исходные размеры
+        const originalWidth = element.style.width;
+        const originalHeight = element.style.height;
+
+        // Устанавливаем размеры A4 перед сохранением
+        element.style.width = '210mm';
+        element.style.height = '297mm';
+
+        const opt = {
+            margin: 0,
+            filename: `certificate_${currentEventId}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, logging: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // Генерируем PDF и скачиваем его
+        html2pdf().from(element).set(opt).save()
+            .then(() => {
+                console.log('PDF успешно сгенерирован и скачан');
+                document.getElementById('profile-success').textContent = 'Грамота успешно скачана как PDF!';
+                document.getElementById('profile-success').classList.remove('d-none');
+                // Восстанавливаем исходные размеры после сохранения
+                element.style.width = originalWidth;
+                element.style.height = originalHeight;
+            })
+            .catch(error => {
+                // Восстанавливаем размеры даже в случае ошибки
+                element.style.width = originalWidth;
+                element.style.height = originalHeight;
+                document.getElementById('profile-error').textContent = 'Ошибка при сохранении PDF: ' + error.message;
+                document.getElementById('profile-error').classList.remove('d-none');
+                console.error('Ошибка:', error);
+            });
+    };
+
     document.addEventListener('DOMContentLoaded', function() {
-        const user = JSON.parse(localStorage.getItem('user'));
+        user = JSON.parse(localStorage.getItem('user'));
         const profileError = document.getElementById('profile-error');
         const profileSuccess = document.getElementById('profile-success');
 
@@ -117,7 +440,11 @@
         document.getElementById('user-name').textContent = user.name;
         document.getElementById('user-email').textContent = user.email || 'Не указан';
         document.getElementById('user-phone').textContent = user.phone || 'Не указан';
-        document.getElementById('user-avatar').src = user.avatar || 'assets/images/default.jpg';
+        const avatarElement = document.getElementById('user-avatar');
+        avatarElement.src = user.avatar || 'assets/images/default.jpg';
+        avatarElement.onerror = () => {
+            avatarElement.src = 'assets/images/default.jpg';
+        };
 
         // Заполняем форму редактирования
         document.getElementById('edit-name').value = user.name;
@@ -145,22 +472,60 @@
             locale: 'ru',
             events: `/volunteer_system/api/registrations.php?volunteer_id=${user.id}&calendar=1`,
             eventClick: function(info) {
-                alert(`Мероприятие: ${info.event.title}\nДата: ${info.event.start.toLocaleDateString()}`);
+                // Загружаем полные данные о мероприятии
+                fetch(`/volunteer_system/api/registrations.php?volunteer_id=${user.id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Находим мероприятие по ID (event_id)
+                        const eventData = data.find(event => event.event_id == info.event.id);
+                        if (eventData) {
+                            // Заполняем модальное окно данными
+                            document.getElementById('eventTitle').textContent = eventData.title || 'Нет данных';
+                            document.getElementById('eventDate').textContent = new Date(eventData.event_date).toLocaleDateString('ru-RU') || 'Нет данных';
+                            document.getElementById('eventHours').textContent = eventData.hours || '0';
+                            document.getElementById('eventDescription').textContent = eventData.description || 'Нет описания';
+                            document.getElementById('eventStatus').textContent = eventData.status === 'active' ? 'Активное' : eventData.status === 'completed' ? 'Завершённое' : 'Повторяющееся';
+                            document.getElementById('eventOrganizer').textContent = eventData.organizer_name || 'Не указан';
+                            document.getElementById('eventOrganizerLink').href = `organizer_profile.html?id=${eventData.organizer_id}`;
+                            const stars = '★'.repeat(eventData.rating || 0) + '☆'.repeat(5 - (eventData.rating || 0));
+                            document.getElementById('eventRating').textContent = stars;
+                            document.getElementById('eventComment').textContent = eventData.comment || 'Нет комментария';
+
+                            // Открываем модальное окно
+                            const eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
+                            eventModal.show();
+                        } else {
+                            alert('Не удалось найти информацию о мероприятии.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка загрузки данных мероприятия:', error);
+                        alert('Ошибка загрузки данных мероприятия: ' + error.message);
+                    });
             }
         });
         calendar.render();
 
         // Волонтёрская книжка
         fetch(`/volunteer_system/api/registrations.php?volunteer_id=${user.id}`)
-            .then(response => response.json())
-            .then(data => {
+            .then(response => response.text())
+            .then(text => {
+                console.log('Ответ от api/registrations.php:', text);
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    throw new Error(`Ошибка парсинга JSON: ${e.message}, Текст: ${text}`);
+                }
                 const book = document.getElementById('volunteer-book');
-                if (data.length === 0) {
+                if (!data || data.length === 0) {
                     book.innerHTML = '<p>Вы пока не участвовали в мероприятиях.</p>';
                     return;
                 }
                 data.forEach(reg => {
                     const stars = '★'.repeat(reg.rating || 0) + '☆'.repeat(5 - (reg.rating || 0));
+                    const canGenerateCertificate = reg.status === 'completed';
+                    console.log(`Мероприятие ${reg.title}: status=${reg.status}, canGenerateCertificate=${canGenerateCertificate}`);
                     book.innerHTML += `
                     <div class="card">
                         <div class="card-body">
@@ -170,15 +535,18 @@
                                 <strong>Часы:</strong> ${reg.hours || 0}<br>
                                 <strong>Описание:</strong> ${reg.description || 'Нет описания'}<br>
                                 <strong>Рейтинг:</strong> <span class="rating-stars">${stars}</span><br>
-                                <strong>Комментарий:</strong> ${reg.comment || 'Нет комментария'}
+                                <strong>Комментарий:</strong> ${reg.comment || 'Нет комментария'}<br>
+                                <strong>Статус:</strong> ${reg.status === 'active' ? 'Активное' : reg.status === 'completed' ? 'Завершённое' : 'Повторяющееся'}<br>
+                                <strong>Организатор:</strong> <a href="organizer_profile.html?id=${reg.organizer_id}">${reg.organizer_name}</a>
                             </p>
+                            ${canGenerateCertificate ? `<button class="btn btn-success" onclick="previewCertificate(${reg.event_id})">Грамота</button>` : ''}
                         </div>
                     </div>
                 `;
                 });
             })
             .catch(error => {
-                document.getElementById('volunteer-book').innerHTML = '<p>Ошибка загрузки волонтёрской книжки</p>';
+                document.getElementById('volunteer-book').innerHTML = '<p>Ошибка загрузки волонтёрской книжки: ' + error.message + '</p>';
                 console.error('Ошибка:', error);
             });
 
