@@ -2,38 +2,117 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Лента мероприятий</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
     <style>
-        .sidebar { position: fixed; top: 0; bottom: 0; left: 0; z-index: 100; padding-top: 56px; }
-        .main-content { margin-left: 250px; padding: 20px; }
-        .news-card { margin-bottom: 1rem; }
-        .news-card .btn { margin-right: 5px; }
-        .filter-buttons { margin-bottom: 1rem; }
-        .comments-section { margin-top: 1rem; }
+        .chatbot-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            height: 500px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: none;
+            flex-direction: column;
+            z-index: 1000;
+        }
+        .chatbot-header {
+            background: linear-gradient(90deg, #007bff, #00c6ff);
+            color: white;
+            padding: 10px;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .chatbot-header img {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+        }
+        .chatbot-body {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+        .chatbot-message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .chatbot-message.bot {
+            background: #007bff;
+            color: white;
+            margin-left: auto;
+        }
+        .chatbot-message.user {
+            background: #e9ecef;
+            color: black;
+            margin-right: auto;
+        }
+        .chatbot-input {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid #dee2e6;
+        }
+        .chatbot-input input {
+            flex: 1;
+            border-radius: 20px;
+            border: 1px solid #dee2e6;
+            padding: 5px 10px;
+            margin-right: 10px;
+        }
+        .chatbot-input button {
+            border-radius: 20px;
+            padding: 5px 15px;
+        }
+        .chatbot-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(90deg, #007bff, #00c6ff);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            z-index: 999;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .chatbot-toggle:hover {
+            background: linear-gradient(90deg, #00c6ff, #007bff);
+        }
     </style>
 </head>
 <body>
 <!-- Боковая панель -->
-<nav class="sidebar bg-light">
+<nav class="sidebar">
     <div class="p-3">
-        <h4>Меню</h4>
+        <h4 class="text-center"><i class="fas fa-hand-holding-heart me-2"></i> Меню</h4>
         <ul class="nav flex-column">
             <li class="nav-item">
-                <a class="nav-link active" href="feed.html">Лента мероприятий</a>
+                <a class="nav-link active" href="feed.html"><i class="fas fa-newspaper me-2"></i> Лента мероприятий</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="volunteer.html">Профиль</a>
+                <a class="nav-link" href="volunteer.html"><i class="fas fa-user-circle me-2"></i> Профиль</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#achievements">Достижения</a>
+                <a class="nav-link" href="achievements.html"><i class="fas fa-trophy me-2"></i> Достижения</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#registrations">Регистрации</a>
+                <a class="nav-link" href="registrations.html"><i class="fas fa-users me-2"></i> Регистрации</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="index.html" onclick="localStorage.removeItem('user');">Выйти</a>
+                <a class="nav-link" href="index.html" onclick="localStorage.removeItem('user');"><i class="fas fa-sign-out-alt me-2"></i> Выйти</a>
             </li>
         </ul>
     </div>
@@ -41,52 +120,404 @@
 
 <!-- Основной контент -->
 <div class="main-content">
-    <h1>Лента мероприятий</h1>
-    <div id="profile-error" class="alert alert-danger d-none"></div>
-    <div id="profile-success" class="alert alert-success d-none"></div>
+    <div class="container">
+        <h1><i class="fas fa-newspaper me-2"></i> Лента мероприятий</h1>
+        <div id="profile-error" class="alert alert-danger d-none"></div>
+        <div id="profile-success" class="alert alert-success d-none"></div>
 
-    <h3>Добро пожаловать, <span id="user-name"></span>!</h3>
+        <h3 class="text-center mb-4"><i class="fas fa-user-circle me-2"></i> Добро пожаловать, <span id="user-name"></span>!</h3>
 
-    <!-- Поиск -->
-    <div class="mb-4">
-        <div class="input-group">
-            <input type="text" class="form-control" id="search-input" placeholder="Поиск по заголовку или организатору">
-            <button class="btn btn-outline-secondary" type="button" onclick="filterNews()">Поиск</button>
+        <!-- Поиск -->
+        <div class="mb-4">
+            <div class="input-group">
+                <input type="text" class="form-control" id="search-input" placeholder="Поиск по заголовку или организатору">
+                <button class="btn btn-outline-secondary" type="button" id="search-btn"><i class="fas fa-search me-2"></i> Поиск</button>
+            </div>
         </div>
-    </div>
 
-    <!-- Фильтры -->
-    <div class="filter-buttons">
-        <button class="btn btn-outline-primary" onclick="loadNews('')">Все</button>
-        <button class="btn btn-outline-primary" onclick="loadNews('active')">Активные</button>
-        <button class="btn btn-outline-primary" onclick="loadNews('completed')">Завершённые</button>
-        <button class="btn btn-outline-primary" onclick="loadNews('recurring')">Повторяющиеся</button>
-    </div>
+        <!-- Фильтры -->
+        <div class="filter-buttons">
+            <button class="btn btn-outline-primary" data-status=""><i class="fas fa-list me-2"></i> Все</button>
+            <button class="btn btn-outline-primary" data-status="active"><i class="fas fa-play me-2"></i> Активные</button>
+            <button class="btn btn-outline-primary" data-status="completed"><i class="fas fa-check me-2"></i> Завершённые</button>
+            <button class="btn btn-outline-primary" data-status="recurring"><i class="fas fa-sync me-2"></i> Повторяющиеся</button>
+        </div>
 
-    <!-- Лента новостей -->
-    <div class="card">
-        <div class="card-body">
-            <h4>Новости</h4>
-            <div id="news-feed"></div>
+        <!-- Лента новостей -->
+        <div class="card">
+            <div class="card-body">
+                <h4 class="text-center mb-4"><i class="fas fa-newspaper me-2"></i> Новости</h4>
+                <div id="news-feed"></div>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Кнопка для открытия чат-бота -->
+<button class="chatbot-toggle" id="chatbot-toggle"><i class="fas fa-robot me-2"></i> Подобрать мероприятие</button>
+
+<!-- Контейнер для чат-бота -->
+<div class="chatbot-container" id="chatbot-container">
+    <div class="chatbot-header">
+        <div style="display: flex; align-items: center;">
+            <img src="https://cdn.pixabay.com/photo/2019/10/31/07/02/bot-4590055_960_720.png" alt="Bot Avatar">
+            <span style="margin-left: 10px;">Event Picker Bot</span>
+        </div>
+        <button class="btn-close btn-close-white" id="chatbot-close"></button>
+    </div>
+    <div class="chatbot-body" id="chatbot-body">
+        <!-- Сообщения будут добавляться здесь -->
+    </div>
+    <div class="chatbot-input">
+        <input type="text" id="chatbot-input" placeholder="Введите сообщение...">
+        <button class="btn btn-primary" id="chatbot-send"><i class="fas fa-paper-plane"></i></button>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // Глобальные переменные
     let user, status = '', search = '';
+    let profileError, profileSuccess;
+    let conversationHistory = []; // История диалога для DeepSeek
 
-    // Функция фильтрации (доступна глобально)
-    window.filterNews = function() {
+    // Функция фильтрации
+    function filterNews() {
         loadNews(status);
-    };
+    }
 
+    // Загрузка новостей
+    function loadNews(newStatus = '') {
+        status = newStatus;
+        search = document.getElementById('search-input').value.toLowerCase().trim();
+        console.log('Параметры загрузки новостей:', { status, search });
+
+        fetch(`/volunteer_system/api/news.php?user_id=${user.id}&user_role=${user.role}${status ? '&status=' + status : ''}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(news => {
+                const newsFeed = document.getElementById('news-feed');
+                newsFeed.innerHTML = '';
+                if (!news || news.length === 0) {
+                    newsFeed.innerHTML = '<p>Новостей пока нет.</p>';
+                    return;
+                }
+
+                console.log('Новости перед фильтрацией:', news);
+
+                const filteredNews = news.filter(item => {
+                    const title = item.title ? item.title.toLowerCase() : '';
+                    const organizerName = item.organizer_name ? item.organizer_name.toLowerCase() : '';
+                    const titleMatch = title.includes(search);
+                    const organizerMatch = organizerName.includes(search);
+                    console.log(`Фильтрация новости: title=${title}, organizerName=${organizerName}, search=${search}, titleMatch=${titleMatch}, organizerMatch=${organizerMatch}`);
+                    return titleMatch || organizerMatch;
+                });
+
+                console.log('Отфильтрованные новости:', filteredNews);
+
+                if (filteredNews.length === 0) {
+                    newsFeed.innerHTML = '<p>Новостей по вашему запросу не найдено.</p>';
+                    return;
+                }
+
+                filteredNews.forEach(item => {
+                    const eventDate = item.event_date ? new Date(item.event_date).toLocaleString('ru-RU') : 'Не указано';
+                    const canRegister = item.event_id;
+                    const newsCard = document.createElement('div');
+                    newsCard.className = 'news-card card';
+                    newsCard.innerHTML = `
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-heading me-2"></i> ${item.title || 'Без заголовка'}</h5>
+                        <p class="card-text">
+                            <strong><i class="fas fa-user me-2"></i> Организатор:</strong> <a href="organizer_profile.html?id=${item.organizer_id}">${item.organizer_name || 'Неизвестный организатор'}</a><br>
+                            <strong><i class="fas fa-calendar-alt me-2"></i> Мероприятие:</strong> ${item.event_title || 'Нет мероприятия'}<br>
+                            <strong><i class="fas fa-clock me-2"></i> Дата:</strong> ${eventDate}<br>
+                            <strong><i class="fas fa-align-left me-2"></i> Описание:</strong> ${item.content || 'Нет описания'}
+                        </p>
+                        <button class="btn btn-primary like-btn" data-news-id="${item.id}"><i class="fas fa-heart me-2"></i> ${item.liked ? 'Убрать лайк' : 'Лайк'} (${item.likes || 0})</button>
+                        ${canRegister ? `<button class="btn btn-info register-btn" data-event-id="${item.event_id}"><i class="fas fa-sign-in-alt me-2"></i> Зарегистрироваться</button>` : ''}
+                        <div class="comments-section">
+                            <h6><i class="fas fa-comments me-2"></i> Комментарии:</h6>
+                            <div id="comments-${item.id}"></div>
+                            <form class="comment-form" data-news-id="${item.id}">
+                                <div class="input-group mb-3">
+                                    <input type="text" class="form-control comment-input" id="comment-input-${item.id}" placeholder="Написать комментарий">
+                                    <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-paper-plane me-2"></i> Отправить</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                `;
+                    newsFeed.appendChild(newsCard);
+                    loadComments(item.id);
+                });
+
+                document.querySelectorAll('.like-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const newsId = this.getAttribute('data-news-id');
+                        toggleLike(newsId);
+                    });
+                });
+
+                document.querySelectorAll('.register-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const eventId = this.getAttribute('data-event-id');
+                        registerForEvent(eventId);
+                    });
+                });
+
+                document.querySelectorAll('.comment-form').forEach(form => {
+                    form.addEventListener('submit', function(event) {
+                        event.preventDefault();
+                        const newsId = this.getAttribute('data-news-id');
+                        addComment(newsId);
+                    });
+                });
+            })
+            .catch(error => {
+                profileError.innerHTML = '<p>Ошибка загрузки новостей: ' + error.message + '</p>';
+                console.error('Ошибка при загрузке новостей:', error);
+            });
+    }
+
+    // Лайк/снятие лайка
+    function toggleLike(newsId) {
+        console.log('Попытка поставить/снять лайк:', { newsId, userId: user.id, userRole: user.role });
+        fetch('/volunteer_system/api/likes.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                news_id: newsId,
+                user_id: user.id,
+                user_role: user.role
+            }),
+            credentials: 'same-origin'
+        })
+            .then(response => {
+                console.log('Ответ от likes.php:', response);
+                if (!response.ok) {
+                    throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Данные от likes.php:', data);
+                if (data.error) {
+                    profileError.textContent = data.error;
+                    profileError.classList.remove('d-none');
+                } else {
+                    loadNews(status);
+                }
+            })
+            .catch(error => {
+                profileError.textContent = 'Ошибка при обработке лайка: ' + error.message;
+                profileError.classList.remove('d-none');
+                console.error('Ошибка при обработке лайка:', error);
+            });
+    }
+
+    // Регистрация на мероприятие
+    function registerForEvent(eventId) {
+        console.log('Попытка зарегистрироваться на мероприятие:', { eventId, volunteerId: user.id });
+        fetch('/volunteer_system/api/registrations.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                volunteer_id: user.id,
+                event_id: eventId
+            }),
+            credentials: 'same-origin'
+        })
+            .then(response => {
+                console.log('Ответ от registrations.php:', response);
+                if (!response.ok) {
+                    throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Данные от registrations.php:', data);
+                if (data.error) {
+                    profileError.textContent = data.error;
+                    profileError.classList.remove('d-none');
+                } else {
+                    profileSuccess.textContent = 'Вы зарегистрированы на мероприятие!';
+                    profileSuccess.classList.remove('d-none');
+                    loadNews(status);
+                }
+            })
+            .catch(error => {
+                profileError.textContent = 'Ошибка при регистрации: ' + error.message;
+                profileError.classList.remove('d-none');
+                console.error('Ошибка при регистрации:', error);
+            });
+    }
+
+    // Загрузка комментариев
+    function loadComments(newsId) {
+        fetch(`/volunteer_system/api/comments.php?news_id=${newsId}`)
+            .then(response => {
+                console.log('Ответ от comments.php (загрузка):', response);
+                if (!response.ok) {
+                    throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(comments => {
+                console.log('Комментарии для новости', newsId, ':', comments);
+                const commentsDiv = document.getElementById(`comments-${newsId}`);
+                commentsDiv.innerHTML = '';
+                comments.forEach(comment => {
+                    let commentClass = 'comment';
+                    if (comment.user_id == user.id && comment.user_role === user.role) {
+                        commentClass += ' current-user'; // Комментарий текущего пользователя
+                    } else if (comment.user_role === 'volunteer') {
+                        commentClass += ' volunteer'; // Комментарий волонтёра
+                    } else if (comment.user_role === 'organizer') {
+                        commentClass += ' organizer'; // Комментарий организатора
+                    }
+                    commentsDiv.innerHTML += `
+                    <div class="${commentClass}">
+                        <strong>${comment.user_name}:</strong> ${comment.content}
+                        <small>(${new Date(comment.created_at).toLocaleString('ru-RU')})</small>
+                    </div>
+                `;
+                });
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки комментариев:', error);
+            });
+    }
+
+    // Добавление комментария
+    function addComment(newsId) {
+        const content = document.getElementById(`comment-input-${newsId}`).value.trim();
+        if (!content) {
+            alert('Введите комментарий');
+            return;
+        }
+
+        console.log('Попытка добавить комментарий:', { newsId, userId: user.id, userRole: user.role, content });
+        fetch('/volunteer_system/api/comments.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                news_id: newsId,
+                user_id: user.id,
+                user_role: user.role,
+                content: content
+            }),
+            credentials: 'same-origin'
+        })
+            .then(response => {
+                console.log('Ответ от comments.php (добавление):', response);
+                if (!response.ok) {
+                    throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Данные от comments.php:', data);
+                if (data.error) {
+                    profileError.textContent = data.error;
+                    profileError.classList.remove('d-none');
+                } else {
+                    document.getElementById(`comment-input-${newsId}`).value = '';
+                    loadComments(newsId);
+                }
+            })
+            .catch(error => {
+                profileError.textContent = 'Ошибка при добавлении комментария: ' + error.message;
+                profileError.classList.remove('d-none');
+                console.error('Ошибка при добавлении комментария:', error);
+            });
+    }
+
+    // Логика чат-бота с DeepSeek
+    function addChatMessage(message, isBot = true) {
+        const chatBody = document.getElementById('chatbot-body');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chatbot-message ${isBot ? 'bot' : 'user'}`;
+        messageDiv.textContent = message;
+        chatBody.appendChild(messageDiv);
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    async function sendMessageToDeepSeek(userMessage) {
+        conversationHistory.push({ role: 'user', content: userMessage });
+
+        try {
+            const response = await fetch('/volunteer_system/api/proxy.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'deepseek-chat', // Используем deepseek-chat, который обновлён до DeepSeek-V3
+                    messages: [
+                        { role: 'system', content: 'Ты чат-бот волонтёрского портала. Помогай подбирать мероприятия из категорий "Экология", "Благотворительность", "Творчество". Отвечай на русском языке, будь дружелюбным и профессиональным.' },
+                        ...conversationHistory
+                    ],
+                    max_tokens: 150
+                })
+            });
+
+            const data = await response.json();
+            console.log('Ответ от DeepSeek API:', JSON.stringify(data, null, 2));
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Неизвестная ошибка от DeepSeek API');
+            }
+
+            let botMessage;
+            if (data.choices && Array.isArray(data.choices) && data.choices.length > 0) {
+                botMessage = data.choices[0].message.content.trim();
+            } else if (data.completion) {
+                botMessage = data.completion.trim();
+            } else if (data.output) {
+                botMessage = data.output.trim();
+            } else if (data.result) {
+                botMessage = data.result.trim();
+            } else if (data.message) {
+                botMessage = data.message.trim();
+            } else if (data.error === false) {
+                throw new Error('Ответ от DeepSeek API не содержит текста сообщения: проверь API-ключ в proxy.php или убедись, что указана правильная модель (deepseek-chat).');
+            } else {
+                throw new Error('Неверный формат ответа от DeepSeek API: не удалось найти подходящее поле с текстом. Ответ: ' + JSON.stringify(data));
+            }
+
+            conversationHistory.push({ role: 'assistant', content: botMessage });
+            return botMessage;
+        } catch (error) {
+            console.error('Ошибка при обращении к DeepSeek через прокси:', error);
+            return 'Извини, произошла ошибка: ' + error.message + '. Попробуй снова позже.';
+        }
+    }
+
+    // Инициализация чат-бота
     document.addEventListener('DOMContentLoaded', function() {
-        user = JSON.parse(localStorage.getItem('user'));
-        const profileError = document.getElementById('profile-error');
-        const profileSuccess = document.getElementById('profile-success');
+        // Инициализируем глобальные переменные
+        profileError = document.getElementById('profile-error');
+        profileSuccess = document.getElementById('profile-success');
 
-        if (!user || user.role !== 'volunteer') {
-            profileError.textContent = 'Пожалуйста, войдите как волонтёр';
+        user = JSON.parse(localStorage.getItem('user'));
+
+        if (!user) {
+            profileError.textContent = 'Пожалуйста, войдите';
             profileError.classList.remove('d-none');
             setTimeout(() => window.location.href = '/volunteer_system/index.html', 2000);
             return;
@@ -94,245 +525,53 @@
 
         document.getElementById('user-name').textContent = user.name;
 
-        // Загрузка новостей
-        function loadNews(newStatus = '') {
-            status = newStatus;
-            search = document.getElementById('search-input').value.toLowerCase().trim();
-            console.log('Параметры загрузки новостей:', { status, search });
+        // Обработчик для кнопки поиска
+        document.getElementById('search-btn').addEventListener('click', filterNews);
 
-            fetch(`/volunteer_system/api/news.php?user_id=${user.id}&user_role=${user.role}${status ? '&status=' + status : ''}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
-                    }
-                    return response.text();
-                })
-                .then(text => {
-                    console.log('Ответ от api/news.php:', text);
-                    let news;
-                    try {
-                        news = JSON.parse(text);
-                    } catch (e) {
-                        throw new Error(`Ошибка парсинга JSON: ${e.message}, Текст: ${text}`);
-                    }
-                    const newsFeed = document.getElementById('news-feed');
-                    newsFeed.innerHTML = '';
-                    if (!news || news.length === 0) {
-                        newsFeed.innerHTML = '<p>Новостей пока нет.</p>';
-                        return;
-                    }
+        // Обработчики для кнопок фильтров
+        document.querySelectorAll('.filter-buttons .btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const newStatus = this.getAttribute('data-status');
+                loadNews(newStatus);
+            });
+        });
 
-                    console.log('Новости перед фильтрацией:', news);
+        // Обработчики для чат-бота
+        const chatbotContainer = document.getElementById('chatbot-container');
+        const chatbotToggle = document.getElementById('chatbot-toggle');
+        const chatbotClose = document.getElementById('chatbot-close');
+        const chatbotInput = document.getElementById('chatbot-input');
+        const chatbotSend = document.getElementById('chatbot-send');
 
-                    const filteredNews = news.filter(item => {
-                        const title = item.title ? item.title.toLowerCase() : '';
-                        const organizerName = item.organizer_name ? item.organizer_name.toLowerCase() : '';
-                        const titleMatch = title.includes(search);
-                        const organizerMatch = organizerName.includes(search);
-                        console.log(`Фильтрация новости: title=${title}, organizerName=${organizerName}, search=${search}, titleMatch=${titleMatch}, organizerMatch=${organizerMatch}`);
-                        return titleMatch || organizerMatch;
-                    });
+        chatbotToggle.addEventListener('click', () => {
+            chatbotContainer.style.display = 'flex';
+            chatbotToggle.style.display = 'none';
+            addChatMessage('Привет! Я помогу тебе подобрать мероприятие или ответить на вопросы о волонтёрстве. Что ты хочешь узнать?');
+        });
 
-                    console.log('Отфильтрованные новости:', filteredNews);
+        chatbotClose.addEventListener('click', () => {
+            chatbotContainer.style.display = 'none';
+            chatbotToggle.style.display = 'block';
+            document.getElementById('chatbot-body').innerHTML = '';
+            conversationHistory = []; // Очищаем историю диалога
+        });
 
-                    if (filteredNews.length === 0) {
-                        newsFeed.innerHTML = '<p>Новостей по вашему запросу не найдено.</p>';
-                        return;
-                    }
+        chatbotSend.addEventListener('click', async () => {
+            const userMessage = chatbotInput.value.trim();
+            if (!userMessage) return;
 
-                    filteredNews.forEach(item => {
-                        const eventDate = item.event_date ? new Date(item.event_date).toLocaleString('ru-RU') : 'Не указано';
-                        const canRegister = item.event_id && item.status === 'active' && new Date(item.event_date) > new Date();
-                        newsFeed.innerHTML += `
-                            <div class="news-card card">
-                                <div class="card-body">
-                                    <h5 class="card-title">${item.title || 'Без заголовка'}</h5>
-                                    <p class="card-text">
-                                        <strong>Организатор:</strong> <a href="organizer_profile.html?id=${item.organizer_id}">${item.organizer_name || 'Неизвестный организатор'}</a><br>
-                                        <strong>Мероприятие:</strong> ${item.event_title || 'Нет мероприятия'}<br>
-                                        <strong>Дата:</strong> ${eventDate}<br>
-                                        <strong>Описание:</strong> ${item.content || 'Нет описания'}
-                                    </p>
-                                    <button class="btn btn-primary" onclick="toggleLike(${item.id})" id="like-btn-${item.id}">${item.liked ? 'Убрать лайк' : 'Лайк'} (${item.likes || 0})</button>
-                                    <button class="btn btn-success" onclick="subscribeToOrganizer(${item.organizer_id})" id="subscribe-btn-${item.organizer_id}">${item.subscribed ? 'Отписаться' : 'Подписаться'}</button>
-                                    ${canRegister ? `<button class="btn btn-info" onclick="registerForEvent(${item.event_id})">Зарегистрироваться</button>` : ''}
-                                    <div class="comments-section">
-                                        <h6>Комментарии:</h6>
-                                        <div id="comments-${item.id}"></div>
-                                        <form onsubmit="addComment(${item.id}); return false;">
-                                            <div class="input-group mb-3">
-                                                <input type="text" class="form-control" id="comment-input-${item.id}" placeholder="Написать комментарий">
-                                                <button class="btn btn-outline-secondary" type="submit">Отправить</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                        loadComments(item.id);
-                    });
-                })
-                .catch(error => {
-                    document.getElementById('news-feed').innerHTML = '<p>Ошибка загрузки новостей: ' + error.message + '</p>';
-                    console.error('Ошибка:', error);
-                });
-        }
+            addChatMessage(userMessage, false);
+            chatbotInput.value = '';
 
-        // Лайк/снятие лайка
-        function toggleLike(newsId) {
-            fetch('/volunteer_system/api/likes.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    news_id: newsId,
-                    user_id: user.id,
-                    user_role: user.role
-                }),
-                credentials: 'same-origin'
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        profileError.textContent = data.error;
-                        profileError.classList.remove('d-none');
-                    } else {
-                        loadNews(status);
-                    }
-                })
-                .catch(error => {
-                    profileError.textContent = 'Ошибка при обработке лайка: ' + error.message;
-                    profileError.classList.remove('d-none');
-                    console.error('Ошибка:', error);
-                });
-        }
+            const botMessage = await sendMessageToDeepSeek(userMessage);
+            addChatMessage(botMessage);
+        });
 
-        // Подписка/отписка
-        function subscribeToOrganizer(organizerId) {
-            fetch('/volunteer_system/api/subscriptions.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    user_id: user.id,
-                    user_role: user.role,
-                    organizer_id: organizerId
-                }),
-                credentials: 'same-origin'
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        profileError.textContent = data.error;
-                        profileError.classList.remove('d-none');
-                    } else {
-                        loadNews(status);
-                    }
-                })
-                .catch(error => {
-                    profileError.textContent = 'Ошибка при подписке: ' + error.message;
-                    profileError.classList.remove('d-none');
-                    console.error('Ошибка:', error);
-                });
-        }
-
-        // Регистрация на мероприятие
-        function registerForEvent(eventId) {
-            fetch('/volunteer_system/api/registrations.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    volunteer_id: user.id,
-                    event_id: eventId
-                }),
-                credentials: 'same-origin'
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        profileError.textContent = data.error;
-                        profileError.classList.remove('d-none');
-                    } else {
-                        profileSuccess.textContent = 'Вы зарегистрированы на мероприятие!';
-                        profileSuccess.classList.remove('d-none');
-                    }
-                })
-                .catch(error => {
-                    profileError.textContent = 'Ошибка при регистрации: ' + error.message;
-                    profileError.classList.remove('d-none');
-                    console.error('Ошибка:', error);
-                });
-        }
-
-        // Загрузка комментариев
-        function loadComments(newsId) {
-            fetch(`/volunteer_system/api/comments.php?news_id=${newsId}`)
-                .then(response => response.json())
-                .then(comments => {
-                    const commentsDiv = document.getElementById(`comments-${newsId}`);
-                    commentsDiv.innerHTML = '';
-                    comments.forEach(comment => {
-                        commentsDiv.innerHTML += `
-                            <div class="comment mb-2">
-                                <strong>${comment.user_name}:</strong> ${comment.content}
-                                <small>(${new Date(comment.created_at).toLocaleString('ru-RU')})</small>
-                            </div>
-                        `;
-                    });
-                })
-                .catch(error => {
-                    console.error('Ошибка загрузки комментариев:', error);
-                });
-        }
-
-        // Добавление комментария
-        function addComment(newsId) {
-            const content = document.getElementById(`comment-input-${newsId}`).value.trim();
-            if (!content) {
-                alert('Введите комментарий');
-                return;
+        chatbotInput.addEventListener('keypress', async (event) => {
+            if (event.key === 'Enter') {
+                chatbotSend.click();
             }
-
-            fetch('/volunteer_system/api/comments.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    news_id: newsId,
-                    user_id: user.id,
-                    user_role: user.role,
-                    content: content
-                }),
-                credentials: 'same-origin'
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        profileError.textContent = data.error;
-                        profileError.classList.remove('d-none');
-                    } else {
-                        document.getElementById(`comment-input-${newsId}`).value = '';
-                        loadComments(newsId);
-                    }
-                })
-                .catch(error => {
-                    profileError.textContent = 'Ошибка при добавлении комментария: ' + error.message;
-                    profileError.classList.remove('d-none');
-                    console.error('Ошибка:', error);
-                });
-        }
-
-        // Экспорт функции для фильтрации
-        window.loadNews = loadNews;
+        });
 
         // Загрузка новостей при старте
         loadNews();
