@@ -3,198 +3,262 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Система волонтеров</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css" rel="stylesheet">
+    <title>Система учета волонтерской активности</title>
     <style>
-        body {
-            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .container {
-            background: #fff;
-            border-radius: 15px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            transition: transform 0.3s ease;
-            max-width: 1000px;
-        }
-        .container:hover {
-            transform: translateY(-5px);
-        }
-        h1 {
-            color: #2c3e50;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 40px;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-        }
-        h2.card-title {
-            color: #2c3e50;
-            font-weight: 600;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .card {
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            margin-bottom: 20px;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-        }
-        .card-body {
-            padding: 25px;
-        }
-        .btn-primary {
-            background: linear-gradient(90deg, #007bff, #00c6ff);
-            border: none;
-            border-radius: 25px;
-            padding: 10px 20px;
-            transition: transform 0.2s ease, background 0.3s ease;
-        }
-        .btn-primary:hover {
-            background: linear-gradient(90deg, #00c6ff, #007bff);
-            transform: scale(1.05);
-        }
-        .btn-info {
-            background: linear-gradient(90deg, #17a2b8, #00c4b4);
-            border: none;
-            border-radius: 25px;
-            padding: 10px 20px;
-            transition: transform 0.2s ease, background 0.3s ease;
-        }
-        .btn-info:hover {
-            background: linear-gradient(90deg, #00c4b4, #17a2b8);
-            transform: scale(1.05);
-        }
-        .form-control {
-            border-radius: 10px;
-            border: 1px solid #dee2e6;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        .form-control:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
-            outline: none;
-        }
-        .form-label {
-            font-weight: 500;
-            color: #2c3e50;
-        }
-        .alert {
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-        .row {
-            gap: 20px;
-        }
-        .col-md-6 {
-            flex: 1;
-            min-width: 300px;
-        }
-        .mt-4 {
-            text-align: center;
-        }
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-            }
-            h1 {
-                font-size: 1.8rem;
-            }
-            h2.card-title {
-                font-size: 1.4rem;
-            }
-            .col-md-6 {
-                min-width: 100%;
-            }
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin-bottom: 20px; }
+        .item { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
+        .actions { margin-top: 5px; }
+        form { display: flex; flex-direction: column; gap: 10px; max-width: 300px; }
+        input, button { padding: 8px; }
+        #calendar { display: grid; gap: 10px; }
     </style>
 </head>
 <body>
-<div class="container mt-5">
-    <h1 class="mb-4"><i class="fas fa-hand-holding-heart me-2"></i> Система волонтеров</h1>
-    <div class="row">
-        <!-- Форма входа -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h2 class="card-title"><i class="fas fa-sign-in-alt me-2"></i> Вход</h2>
-                    <div id="login-error" class="alert alert-danger d-none"></div>
-                    <div id="login-success" class="alert alert-success d-none"></div>
-                    <form>
-                        <div class="mb-3">
-                            <label for="login-email" class="form-label"><i class="fas fa-envelope me-2"></i> Email</label>
-                            <input type="email" class="form-control" id="login-email" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="login-password" class="form-label"><i class="fas fa-lock me-2"></i> Пароль</label>
-                            <input type="password" class="form-control" id="login-password" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100" id="login-btn"><i class="fas fa-sign-in-alt me-2"></i> Войти</button>
-                    </form>
-                </div>
-            </div>
-        </div>
+<h1>Система учета волонтерской активности</h1>
 
-        <!-- Форма регистрации -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h2 class="card-title"><i class="fas fa-user-plus me-2"></i> Регистрация</h2>
-                    <div id="register-error" class="alert alert-danger d-none"></div>
-                    <div id="register-success" class="alert alert-success d-none"></div>
-                    <form>
-                        <div class="mb-3">
-                            <label for="register-name" class="form-label"><i class="fas fa-user me-2"></i> Имя</label>
-                            <input type="text" class="form-control" id="register-name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="register-email" class="form-label"><i class="fas fa-envelope me-2"></i> Email</label>
-                            <input type="email" class="form-control" id="register-email" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="register-password" class="form-label"><i class="fas fa-lock me-2"></i> Пароль</label>
-                            <input type="password" class="form-control" id="register-password" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="register-role" class="form-label"><i class="fas fa-users me-2"></i> Роль</label>
-                            <select class="form-control" id="register-role">
-                                <option value="volunteer">Волонтёр</option>
-                                <option value="organizer">Организатор</option>
-                            </select>
-                        </div>
-                        <div class="mb-3 d-none" id="register-phone-group">
-                            <label for="register-phone" class="form-label"><i class="fas fa-phone me-2"></i> Телефон</label>
-                            <input type="text" class="form-control" id="register-phone">
-                        </div>
-                        <div class="mb-3 d-none" id="register-organization-group">
-                            <label for="register-organization" class="form-label"><i class="fas fa-building me-2"></i> Организация</label>
-                            <input type="text" class="form-control" id="register-organization">
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100" id="register-btn"><i class="fas fa-user-plus me-2"></i> Зарегистрироваться</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Ссылка на главную страницу -->
-    <div class="mt-4">
-        <a href="feed.html" class="btn btn-info"><i class="fas fa-newspaper me-2"></i> Перейти к ленте новостей</a>
-    </div>
+<div class="section">
+    <h2>Мероприятия</h2>
+    <div id="calendar"></div>
+    <h3>Добавить мероприятие</h3>
+    <form id="eventForm">
+        <input type="text" id="eventTitle" placeholder="Название" required>
+        <input type="text" id="eventDescription" placeholder="Описание">
+        <input type="datetime-local" id="eventDate" required>
+        <input type="number" id="maxParticipants" placeholder="Макс. участников" required>
+        <input type="number" id="organizerId" placeholder="ID организатора" required>
+        <button type="submit">Добавить</button>
+    </form>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="assets/js/app.js"></script>
+
+<div class="section">
+    <h2>Волонтеры</h2>
+    <div id="volunteers"></div>
+    <h3>Добавить волонтера</h3>
+    <form id="volunteerForm">
+        <input type="text" id="volunteerName" placeholder="Имя" required>
+        <input type="email" id="volunteerEmail" placeholder="Email" required>
+        <input type="text" id="volunteerPhone" placeholder="Телефон">
+        <button type="submit">Добавить</button>
+    </form>
+</div>
+
+<div class="section">
+    <h2>Регистрация на мероприятие</h2>
+    <form id="participationForm">
+        <input type="number" id="volunteerId" placeholder="ID волонтера" required>
+        <input type="number" id="eventId" placeholder="ID мероприятия" required>
+        <button type="submit">Зарегистрироваться</button>
+    </form>
+</div>
+
+<div class="section">
+    <h2>Отчеты</h2>
+    <div id="reports"></div>
+    <h3>Добавить отчет</h3>
+    <form id="reportForm">
+        <input type="number" id="reportVolunteerId" placeholder="ID волонтера" required>
+        <input type="number" id="reportEventId" placeholder="ID мероприятия" required>
+        <input type="text" id="reportDescription" placeholder="Описание">
+        <input type="number" id="hoursWorked" placeholder="Часы работы" required>
+        <button type="submit">Добавить</button>
+    </form>
+</div>
+
+<script>
+    // Получение мероприятий
+    async function fetchEvents() {
+        const response = await fetch('/api/events');
+        const events = await response.json();
+        const calendar = document.getElementById('calendar');
+        calendar.innerHTML = '';
+        events.forEach(event => {
+            const eventElement = document.createElement('div');
+            eventElement.className = 'item';
+            eventElement.innerHTML = `
+          <strong>Название:</strong> ${event.title}<br>
+          <strong>Описание:</strong> ${event.description || 'Нет описания'}<br>
+          <strong>Дата:</strong> ${new Date(event.date).toLocaleString()}<br>
+          <strong>Макс. участников:</strong> ${event.max_participants}<br>
+          <strong>ID организатора:</strong> ${event.organizer_id}
+          <div class="actions">
+            <button onclick="updateEvent(${event.id})">Обновить</button>
+            <button onclick="deleteEvent(${event.id})">Удалить</button>
+          </div>
+        `;
+            calendar.appendChild(eventElement);
+        });
+    }
+
+    // Получение волонтеров
+    async function fetchVolunteers() {
+        const response = await fetch('/api/volunteers');
+        const volunteers = await response.json();
+        const volunteersContainer = document.getElementById('volunteers');
+        volunteersContainer.innerHTML = '';
+        volunteers.forEach(volunteer => {
+            const volunteerElement = document.createElement('div');
+            volunteerElement.className = 'item';
+            volunteerElement.innerHTML = `
+          <strong>Имя:</strong> ${volunteer.name}<br>
+          <strong>Email:</strong> ${volunteer.email}<br>
+          <strong>Телефон:</strong> ${volunteer.phone || 'Не указан'}
+          <div class="actions">
+            <button onclick="updateVolunteer(${volunteer.id})">Обновить</button>
+            <button onclick="deleteVolunteer(${volunteer.id})">Удалить</button>
+          </div>
+        `;
+            volunteersContainer.appendChild(volunteerElement);
+        });
+    }
+
+    // Получение отчетов
+    async function fetchReports() {
+        const response = await fetch('/api/reports');
+        const reports = await response.json();
+        const reportsContainer = document.getElementById('reports');
+        reportsContainer.innerHTML = '';
+        reports.forEach(report => {
+            const reportElement = document.createElement('div');
+            reportElement.className = 'item';
+            reportElement.innerHTML = `
+          <strong>ID волонтера:</strong> ${report.volunteer_id}<br>
+          <strong>ID мероприятия:</strong> ${report.event_id}<br>
+          <strong>Описание:</strong> ${report.description || 'Нет описания'}<br>
+          <strong>Часы работы:</strong> ${report.hours_worked}
+        `;
+            reportsContainer.appendChild(reportElement);
+        });
+    }
+
+    // Добавление мероприятия
+    document.getElementById('eventForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('eventTitle').value;
+        const description = document.getElementById('eventDescription').value;
+        const date = document.getElementById('eventDate').value;
+        const max_participants = document.getElementById('maxParticipants').value;
+        const organizer_id = document.getElementById('organizerId').value;
+
+        await fetch('/api/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, description, date, max_participants, organizer_id })
+        });
+
+        document.getElementById('eventForm').reset();
+        fetchEvents();
+    });
+
+    // Добавление волонтера
+    document.getElementById('volunteerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('volunteerName').value;
+        const email = document.getElementById('volunteerEmail').value;
+        const phone = document.getElementById('volunteerPhone').value;
+
+        await fetch('/api/volunteers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, phone })
+        });
+
+        document.getElementById('volunteerForm').reset();
+        fetchVolunteers();
+    });
+
+    // Регистрация на мероприятие
+    document.getElementById('participationForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const volunteer_id = document.getElementById('volunteerId').value;
+        const event_id = document.getElementById('eventId').value;
+
+        const response = await fetch('/api/participations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ volunteer_id, event_id })
+        });
+
+        if (response.ok) {
+            alert('Регистрация успешна!');
+        } else {
+            const error = await response.json();
+            alert(error.message);
+        }
+
+        document.getElementById('participationForm').reset();
+    });
+
+    // Добавление отчета
+    document.getElementById('reportForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const volunteer_id = document.getElementById('reportVolunteerId').value;
+        const event_id = document.getElementById('reportEventId').value;
+        const description = document.getElementById('reportDescription').value;
+        const hours_worked = document.getElementById('hoursWorked').value;
+
+        await fetch('/api/reports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ volunteer_id, event_id, description, hours_worked })
+        });
+
+        document.getElementById('reportForm').reset();
+        fetchReports();
+    });
+
+    // Обновление мероприятия
+    async function updateEvent(id) {
+        const title = prompt('Введите новое название:');
+        const description = prompt('Введите новое описание:');
+        const date = prompt('Введите новую дату (гггг-мм-ддTчч:мм):');
+        const max_participants = prompt('Введите макс. участников:');
+        const organizer_id = prompt('Введите ID организатора:');
+        if (title && date && max_participants && organizer_id) {
+            await fetch(`/api/events/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, description, date, max_participants, organizer_id })
+            });
+            fetchEvents();
+        }
+    }
+
+    // Удаление мероприятия
+    async function deleteEvent(id) {
+        if (confirm('Вы уверены, что хотите удалить мероприятие?')) {
+            await fetch(`/api/events/${id}`, { method: 'DELETE' });
+            fetchEvents();
+        }
+    }
+
+    // Обновление волонтера
+    async function updateVolunteer(id) {
+        const name = prompt('Введите новое имя:');
+        const email = prompt('Введите новый email:');
+        const phone = prompt('Введите новый телефон:');
+        if (name && email) {
+            await fetch(`/api/volunteers/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, phone })
+            });
+            fetchVolunteers();
+        }
+    }
+
+    // Удаление волонтера
+    async function deleteVolunteer(id) {
+        if (confirm('Вы уверены, что хотите удалить волонтера?')) {
+            await fetch(`/api/volunteers/${id}`, { method: 'DELETE' });
+            fetchVolunteers();
+        }
+    }
+
+    // Загрузка данных при открытии страницы
+    fetchEvents();
+    fetchVolunteers();
+    fetchReports();
+</script>
 </body>
 </html>
